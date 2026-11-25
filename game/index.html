@@ -1532,6 +1532,12 @@ function inTri(px,py,a,b,c){const d1=orient(a.x,a.y,b.x,b.y,px,py),d2=orient(b.x
 
 // ---------- board model (shared by live game and AI) ----------
 // M = {P: bulbs, adj: [Set], E: [{a,b}], drifts: [{x,y,r}]}
+// what blocks the straight line from bulb a to point B (a bulb, a snow piece, or a cord) -- mirrors legal()
+function blockerOf(M,a,B,skip){const A=M.P[a];
+  for(let k=0;k<M.P.length;k++){if(k===a||k===skip)continue;const K=M.P[k];if(!K.alive)continue;if(distSegSq(K.x,K.y,A,B)<(isJ()?BCLR:BR*1.15))return {kind:'bulb',x:K.x,y:K.y,r:(isJ()?BCLR:BR*1.15)}}
+  for(const d of M.drifts){if(d.melt)continue;if(distSegSq(d.x,d.y,A,B)<d.r*.92)return {kind:'drift',x:d.x,y:d.y,r:d.r*.92}}
+  for(const e of M.E){if(e.a===a||e.b===a||(skip!=null&&(e.a===skip||e.b===skip)))continue;if(segCross(A,B,M.P[e.a],M.P[e.b]))return {kind:'cord',p:M.P[e.a],q:M.P[e.b]}}
+  return null}
 function legal(M,a,b){for(const d of M.drifts)d.wobQ=0;
   if(a===b)return 'same';const A=M.P[a],B=M.P[b];
   if(!A.alive||!B.alive)return 'That bulb is gone';
@@ -1869,6 +1875,7 @@ cv.addEventListener('pointermove',e=>{
   {const tn=now(),dtm=Math.max(8,tn-d.mt);d.mt=tn;d.spd=(d.spd||0)*.6+.4*(dist/(dtm/1000));snowMove(dist,d.spd);const A=G.bulbs[d.a];cordMove(Math.hypot(x-A.x,y-A.y),dist,d.spd)}
   const t=bulbAt(x,y,Math.max(58,46/S));
   if(t>=0&&t!==d.a){d.target=t;d.why=legal(G.M,d.a,t)||jBudgetWhy(d.a,t);if(d.lastT!==t){d.lastT=t;if(!d.why){SFX.zap();haptic([6,20,6])}}}else{d.target=-1;d.why=null;d.lastT=-1}
+  {const tgt=d.target>=0?G.bulbs[d.target]:{x,y};d.block=(d.target>=0&&!d.why)?null:blockerOf(G.M,d.a,tgt,d.target>=0?d.target:null);if(d.block&&!d.blockOn){d.blockOn=1;haptic(8)}else if(!d.block)d.blockOn=0}
   // nearest bulb this cord could plug into, before the snap
   d.near=null;const NEAR=170;let bd=NEAR;
   G.bulbs.forEach((b,i)=>{if(i===d.a||!b.alive||b.locked||i===d.target)return;const dd=Math.hypot(b.x-x,b.y-y);if(dd<bd&&!legal(G.M,d.a,i)){bd=dd;d.near={i,p:1-dd/NEAR}}});
@@ -1886,12 +1893,23 @@ function drawTrail(t){
 function endDrag(e){
   snowStop();cordStop();buzzStop();pointer.wiping=false;lastWipe=null;if(!G||!G.drag)return;const d=G.drag;G.drag=null;
   if(d.target>=0&&!d.why){playerCommit(d.a,d.target,d.rope);return}
-  if(d.target>=0&&d.why&&d.why!=='same'){reject(d.why,G.bulbs[d.target].x,G.bulbs[d.target].y);SFX.retract(Math.hypot(d.x-G.bulbs[d.a].x,d.y-G.bulbs[d.a].y)*.7)}
+  if(d.target>=0&&d.why&&d.why!=='same'){G.blockFx={a:d.a,b:d.target,blk:blockerOf(G.M,d.a,G.bulbs[d.target],d.target),t0:now()};reject(d.why,G.bulbs[d.target].x,G.bulbs[d.target].y);SFX.retract(Math.hypot(d.x-G.bulbs[d.a].x,d.y-G.bulbs[d.a].y)*.7)}
   else if(pointer.moved<14){G.sel=d.a;hint('Now tap the bulb to connect it to.')}
   else SFX.retract(Math.hypot(d.x-G.bulbs[d.a].x,d.y-G.bulbs[d.a].y));
   d.rope.pinB=false;loose.push({e:{rope:d.rope,recoil:d.a},t0:now(),recoil:1});
 }
 cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+// straight-line guide: the rules test the straight line, so show it -- faint while it's clear, red through whatever blocks it
+function drawCordGuide(t){const g=G;if(!g)return;const pulse=.5+.5*Math.sin(t*.012);
+  const ring=(b,a)=>{if(!b)return;ctx.save();ctx.strokeStyle=`rgba(255,70,80,${a})`;ctx.lineWidth=5;
+    if(b.kind==='cord'){ctx.lineWidth=10;ctx.lineCap='round';ctx.strokeStyle=`rgba(255,70,80,${a*.7})`;ctx.beginPath();ctx.moveTo(b.p.x,b.p.y);ctx.lineTo(b.q.x,b.q.y);ctx.stroke()}
+    else{const r=(b.r||40)*(1+.06*pulse),ry=r/KY();ctx.setLineDash([10,7]);ctx.beginPath();ctx.ellipse(b.x,b.y,r,ry,0,0,6.283);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=`rgba(255,60,70,${a*.22})`;ctx.fill()}ctx.restore()};
+  const line=(A,B,col,w,dash)=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.setLineDash(dash);ctx.lineDashOffset=-t*.04;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore()};
+  const d=g.drag;if(d){const A=g.bulbs[d.a],B=d.target>=0?g.bulbs[d.target]:{x:d.x,y:d.y};
+    if(d.block||(d.target>=0&&d.why&&d.why!=='same')){line(A,B,`rgba(255,80,90,${.55+.35*pulse})`,6,[14,10]);ring(d.block,.6+.4*pulse)}
+    else line(A,B,'rgba(255,255,255,.28)',3,[6,10])}
+  const f=g.blockFx;if(f){const k=(now()-f.t0)/1100;if(k>=1){g.blockFx=null;return}const a=k<.15?k/.15:1-(k-.15)/.85;
+    line(g.bulbs[f.a],g.bulbs[f.b],`rgba(255,80,90,${a})`,7,[14,10]);ring(f.blk,a)}}
 function reject(why,x,y){if(G)for(const d of G.drifts)if(d.wobQ){d.wob=now();SFX.boing()}SFX.thud();haptic(20);floats.push({x,y:y-46,text:guideFor(why)[2],t0:now(),c:[255,180,168]});hint(why)}
 async function playerCommit(a,b,rope){const g=G;g.busy=true;const n=commit(a,b,'you',rope);updateHUD();await afterMove('you',n);updateHUD()}
 async function playerTap(a,b){const g=G;g.busy=true;const rope=await animateDraw(a,b);if(g!==G)return;const n=commit(a,b,'you',rope);updateHUD();await afterMove('you',n);updateHUD()}
@@ -1940,7 +1958,7 @@ function update(dt,t){
     for(const e of g.edges){const [ax,ay]=sock(g.bulbs[e.a]),[bx,by]=sock(g.bulbs[e.b]);e.rope.setEnds(ax,ay,bx,by);e.rope.step(h,t,e.seed);if(e.lit)tighten(e,t)}
     if(g.drag){const d=g.drag;const [ax,ay]=sock(g.bulbs[d.a]);let tx=d.x,ty=d.y;if(d.target>=0&&!d.why){[tx,ty]=sock(g.bulbs[d.target])}
       d.fx+=(tx-d.fx)*.45;d.fy+=(ty-d.fy)*.45;const L=Math.hypot(d.fx-ax,d.fy-ay);const want=clamp(Math.round(L/34),5,24);if(want!==d.rope.n){const grew=want>d.rope.n;d.rope.setEnds(ax,ay,d.fx,d.fy);d.rope.resample();if(grew){SFX.tink(d.rope.n);d.rope.pop=now()}}
-      d.rope.setEnds(ax,ay,d.fx,d.fy);d.rope.slack=1.12;d.rope.step(h,t,1)}
+      d.rope.setEnds(ax,ay,d.fx,d.fy);d.rope.slack=d.block?1.02:1.06;d.rope.step(h,t,1)}
     if(g.aiDraw)g.aiDraw.rope.step(h,t,2);
     for(const l of loose){const r=l.e.rope;if(l.recoil){const [ax,ay]=sock(g.bulbs[l.e.recoil]);r.setEnds(ax,ay,ax,ay);r.pinA=true;r.slack=.2}r.step(h,t,3)}
   }
@@ -2189,6 +2207,7 @@ function render(t){
   if(G.drag&&G.drag.target>=0&&!G.drag.why){const d=G.drag;const cs=trisFor(G.M,d.a,d.target);for(const c of cs){const A=sockPt(d.a),B=sockPt(d.target),C=sockPt(c);ctx.globalCompositeOperation='lighter';ctx.fillStyle=rgba(WARM,.10+.06*Math.sin(t*.01));ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.closePath();ctx.fill();ctx.globalCompositeOperation='source-over'}}
   for(const e of G.edges)drawRope(e.rope,1,e,t);
   for(const l of loose){const a=l.recoil?1-clamp((t-l.t0)/450,0,1):1-clamp((t-l.t0)/1400,0,1);drawRope(l.e.rope,a,null,t)}
+  drawCordGuide(t);
   if(G.drag)drawRope(G.drag.rope,1,null,t);
   if(G.aiDraw)drawRope(G.aiDraw.rope,1,null,t);
   G.bulbs.forEach((b,i)=>zoomAt(b.x,b.y,()=>drawBulb(b,t,i)));
@@ -3137,7 +3156,7 @@ setMuted(muted);setMusic(musicOn);setSurface(surface);setTrack(track);resize();s
   const pairs=[[0,1],[1,3],[0,3],[1,2],[2,4],[1,4],[3,4],[3,5],[4,5]];pairs.forEach(([a,b],i)=>{const owner=i%3===2?'you':'pre';const n=commitSilent(a,b,owner)})})();
 function commitSilent(a,b,owner){const tri=trisFor(G.M,a,b);addEdge(a,b,owner);tri.forEach(c=>{const t={a,b,c,owner:'you',t0:now()+400,dead:0};G.tris.push(t);[[a,b],[b,c],[c,a]].forEach(([p,q])=>{const e=G.edgeMap.get(ekey(p,q));if(e)e.lit={owner:'you',t0:now()+300,from:p}})})}
 requestAnimationFrame(frame);
-window.__nl={get ctx(){return ctx},jShowResult,hint,setG:x=>{G=x},jStuck,jSolve,LEVELS,newJourney,jHint,jSim,jDone,jGoalState,openJIntro,jBegin,openMap,jClone,get SIM(){return SIM},snowFx,getAC:()=>AC,newGame,playerTap,inTri,get G(){return G},DUEL,PUZ,legal,trisFor,allMoves,aiChoose,commit,startTurn,cloneM,applyM};
+window.__nl={get ctx(){return ctx},jShowResult,hint,setG:x=>{G=x},jStuck,toScreen:(x,y)=>[x*S+OX,y*S+OY],blockerOf,jSolve,LEVELS,newJourney,jHint,jSim,jDone,jGoalState,openJIntro,jBegin,openMap,jClone,get SIM(){return SIM},snowFx,getAC:()=>AC,newGame,playerTap,inTri,get G(){return G},DUEL,PUZ,legal,trisFor,allMoves,aiChoose,commit,startTurn,cloneM,applyM};
 })();
 </script>
 <script src="studio-kit/art.js"></script>

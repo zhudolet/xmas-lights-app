@@ -27,7 +27,8 @@ function impulse(sec,decay){
   return b;
 }
 X.init=(ctx,dest)=>{
-  if(AC) return AC;
+  if(AC && (!ctx || ctx===AC)) return AC;
+  if(AC && ctx!==AC){ try{ AC.close(); }catch(e){} AC=null; } // the game's context arrived: move over so there is one output path
   AC = ctx || new (window.AudioContext||window.webkitAudioContext)();
   const comp=AC.createDynamicsCompressor(); comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=3.5; comp.attack.value=.004; comp.release.value=.18;
   OUT=AC.createGain(); OUT.gain.value=X.volume;
@@ -51,21 +52,26 @@ function send(node,wet=.5,pan=0){
 function bell(f,t,vol=.3,len=1.2,pan=0,wet=.5,bright=1){
   const parts=[[1,1,1],[2.76,.42*bright,.45],[5.4,.2*bright,.22],[8.93,.09*bright,.12]];
   const g=AC.createGain(); g.gain.value=1; send(g,wet,pan);
-  parts.forEach(([r,a,dl])=>{ if(f*r>18000) return; const o=AC.createOscillator(), e=AC.createGain(); o.type='sine'; o.frequency.value=f*r;
+  if(KV>=KMAX) return;
+  parts.forEach(([r,a,dl])=>{ if(f*r>18000) return; const o=AC.createOscillator(), e=AC.createGain(); live(o); o.type='sine'; o.frequency.value=f*r;
     env(e,t,.002,vol*a,len*dl); o.connect(e); e.connect(g); o.start(t); o.stop(t+len*dl+.05); });
   // mallet tick
   noiseBurst(t,.006,vol*.25,f*3,pan,wet*.3);
 }
+/* v4.4 voice cap: scoring fires many jingles at once; past this many live voices new pellets are skipped (dense piles of tiny blips crackle and overload phones) */
+let KV=0; const KMAX=56; const live=n=>{ KV++; n.onended=()=>{ KV--; }; };
 function noiseBuf(){ if(noiseBuf.b) return noiseBuf.b; const n=AC.sampleRate, b=AC.createBuffer(1,n,n), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return noiseBuf.b=b; }
 function noiseBurst(t,dur,vol,hp=2000,pan=0,wet=.2,bp){
-  const s=AC.createBufferSource(); s.buffer=noiseBuf(); const f=AC.createBiquadFilter(); f.type=bp?'bandpass':'highpass'; f.frequency.value=Math.min(16000,bp||hp); if(bp) f.Q.value=bp>3000?4:1.5;
+  if(KV>=KMAX) return;
+  const s=AC.createBufferSource(); live(s); s.buffer=noiseBuf(); const f=AC.createBiquadFilter(); f.type=bp?'bandpass':'highpass'; f.frequency.value=Math.min(16000,bp||hp); if(bp) f.Q.value=bp>3000?4:1.5;
   const e=AC.createGain(); env(e,t,.001,vol,dur); s.connect(f); f.connect(e); send(e,wet,pan); s.start(t,Math.random()*.5); s.stop(t+dur+.05);
 }
 /* one sleigh-bell "jingle": a few tiny metal pellets rattling */
 function jingle(t,vol=.18,pan=0,n=5,tone=1){
+  if(KV>KMAX*.5) n=Math.min(n,2); if(KV>=KMAX) return;
   for(let i=0;i<n;i++){ const tt=t+i*(.006+Math.random()*.012);
     const f=(3200+Math.random()*2600)*tone;
-    [1,1.47,2.09].forEach((r,j)=>{ const o=AC.createOscillator(), e=AC.createGain(); o.type='sine'; o.frequency.value=f*r; env(e,tt,.001,vol*(j?.35:.6)*(1-i/n*.5),.09+Math.random()*.08); o.connect(e); send(e,.35,pan); o.start(tt); o.stop(tt+.25); });
+    [1,1.47,2.09].forEach((r,j)=>{ const o=AC.createOscillator(), e=AC.createGain(); live(o); o.type='sine'; o.frequency.value=f*r; env(e,tt,.001,vol*(j?.35:.6)*(1-i/n*.5),.09+Math.random()*.08); o.connect(e); send(e,.35,pan); o.start(tt); o.stop(tt+.25); });
     noiseBurst(tt,.012,vol*.4,7000,pan,.1);
   }
 }
