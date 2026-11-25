@@ -37,7 +37,8 @@ jobs:
         env:
           XL_KEYSTORE_PASSWORD: ${{ secrets.XL_KEYSTORE_PASSWORD }}
           XL_KEY_ALIAS: ${{ secrets.XL_KEY_ALIAS }}
-          XL_KEY_PASSWORD: ${{ secrets.XL_KEY_PASSWORD }}
+          # PKCS12 upload key: the key password is the keystore password (avoids a mis-pasted second secret)
+          XL_KEY_PASSWORD: ${{ secrets.XL_KEYSTORE_PASSWORD }}
           ADMOB_APP_ID: ${{ inputs.live_ads && secrets.ADMOB_ANDROID_APP_ID || '' }}
         run: |
           chmod +x gradlew
