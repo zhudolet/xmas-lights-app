@@ -1,0 +1,11 @@
+{
+  "appId": "app.xmaslights.game",
+  "appName": "Xmas Lights",
+  "webDir": "www",
+  "backgroundColor": "#141433",
+  "android": { "backgroundColor": "#141433", "allowMixedContent": false },
+  "ios": { "backgroundColor": "#141433", "contentInset": "never", "scrollEnabled": false },
+  "plugins": {
+    "AdMob": {}
+  }
+}

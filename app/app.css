@@ -1,0 +1,7 @@
+/* Store build only */
+#bTest, #bGiftT, #testBadge, #jTest { display: none !important; }
+.xl-ad-btn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.xl-ad-btn[disabled] { opacity: .6; }
+.xl-ad-play { width: 0; height: 0; border-left: 14px solid currentColor; border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+.xl-cocoa-empty { opacity: .55; }
+.xl-ad-label { white-space: nowrap; }

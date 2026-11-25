@@ -1,0 +1,52 @@
+# Builds the Android app on GitHub (the runner has the Android SDK).
+# Run it from the Actions tab ("Run workflow"). Output: a signed .aab for Play + a .apk to sideload on a phone.
+# Secrets (Settings > Secrets and variables > Actions):
+#   XL_KEYSTORE_BASE64   base64 of the upload keystore (.jks)   } without these four the build is
+#   XL_KEYSTORE_PASSWORD, XL_KEY_ALIAS, XL_KEY_PASSWORD          } debug-signed: fine for testing, not for Play
+#   ADMOB_ANDROID_APP_ID       ca-app-pub-XXXX~YYYY   (optional until AdMob is set up; test id is used)
+#   XL_REWARDED_ANDROID        ca-app-pub-XXXX/ZZZZ   (optional; Google test ad unit is used)
+name: Android build
+on:
+  workflow_dispatch:
+    inputs:
+      live_ads:
+        description: 'Use the real AdMob ids (only for the store release)'
+        type: boolean
+        default: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - name: Build web bundle
+        env:
+          XL_REWARDED_ANDROID: ${{ inputs.live_ads && secrets.XL_REWARDED_ANDROID || '' }}
+          XL_ADS_TESTING: ${{ inputs.live_ads && 'false' || 'true' }}
+        run: npm run web && npx cap sync android
+      - name: Upload key
+        env: { KS: '${{ secrets.XL_KEYSTORE_BASE64 }}' }
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"; echo "XL_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> $GITHUB_ENV; fi
+      - name: Gradle build
+        working-directory: android
+        env:
+          XL_KEYSTORE_PASSWORD: ${{ secrets.XL_KEYSTORE_PASSWORD }}
+          XL_KEY_ALIAS: ${{ secrets.XL_KEY_ALIAS }}
+          XL_KEY_PASSWORD: ${{ secrets.XL_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ inputs.live_ads && secrets.ADMOB_ANDROID_APP_ID || '' }}
+        run: |
+          chmod +x gradlew
+          EXTRA="-PversionCode=$((100 + GITHUB_RUN_NUMBER))"
+          [ -n "$ADMOB_APP_ID" ] && EXTRA="$EXTRA -PadmobAppId=$ADMOB_APP_ID"
+          if [ -n "$XL_KEYSTORE_FILE" ]; then ./gradlew bundleRelease assembleRelease $EXTRA; else ./gradlew assembleDebug $EXTRA; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xmas-lights-android-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/**/*.apk

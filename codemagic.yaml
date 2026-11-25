@@ -1,0 +1,70 @@
+# Codemagic (codemagic.io) builds the iOS app on a cloud Mac - no Mac needed at home.
+# One-time setup in Codemagic (see STORE-LAUNCH.md, "iOS build"):
+#   Team settings > Integrations > Developer Portal: add an App Store Connect API key, name it  xl_asc_key
+#   App settings > Environment variables, group "admob" (optional until AdMob is ready):
+#       ADMOB_IOS_APP_ID      ca-app-pub-XXXX~YYYY
+#       XL_REWARDED_IOS       ca-app-pub-XXXX/ZZZZ
+#       XL_ADS_TESTING        false        (leave unset to keep Google test ads)
+workflows:
+  ios-testflight:
+    name: iOS -> TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: xl_asc_key
+    environment:
+      groups:
+        - admob
+      node: 22
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: app.xmaslights.game
+    scripts:
+      - name: Install
+        script: npm ci
+      - name: Web bundle + Capacitor sync
+        script: npm run web && npx cap sync ios
+      - name: AdMob app id
+        script: |
+          if [ -n "$ADMOB_IOS_APP_ID" ]; then
+            /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $ADMOB_IOS_APP_ID" ios/App/App/Info.plist
+          fi
+      - name: Signing
+        script: xcode-project use-profiles
+      - name: Build number
+        script: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $((100 + BUILD_NUMBER));/g" ios/App/App.xcodeproj/project.pbxproj
+      - name: Build .ipa
+        script: xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  android-play-internal:
+    name: Android -> Play internal testing (alternative to the GitHub workflow)
+    instance_type: linux_x2
+    environment:
+      groups:
+        - admob
+      node: 22
+      java: 21
+      android_signing:
+        - xl_upload_key
+    scripts:
+      - name: Install
+        script: npm ci
+      - name: Web bundle + Capacitor sync
+        script: XL_REWARDED_ANDROID="$XL_REWARDED_ANDROID" npm run web && npx cap sync android
+      - name: Build .aab
+        script: |
+          cd android
+          export XL_KEYSTORE_FILE=$CM_KEYSTORE_PATH XL_KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD XL_KEY_ALIAS=$CM_KEY_ALIAS XL_KEY_PASSWORD=$CM_KEY_PASSWORD
+          EXTRA="-PversionCode=$((100 + BUILD_NUMBER))"
+          [ -n "$ADMOB_ANDROID_APP_ID" ] && EXTRA="$EXTRA -PadmobAppId=$ADMOB_ANDROID_APP_ID"
+          ./gradlew bundleRelease $EXTRA
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab

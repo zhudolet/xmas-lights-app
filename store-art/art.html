@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8">
+<link rel="stylesheet" href="../www/fonts/fonts.css">
+<style>body{margin:0;background:transparent}canvas{display:block}</style>
+<canvas id="c"></canvas>
+<script src="../www/studio-kit/art.js"></script>
+<script>
+const P=new URLSearchParams(location.search), W=+P.get('w')||1024, H=+P.get('h')||1024, kind=P.get('k')||'icon';
+const c=document.getElementById('c'); c.width=W; c.height=H; const x=c.getContext('2d');
+function bg(){const g=x.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.max(W,H)*.75);g.addColorStop(0,'#3b2a8c');g.addColorStop(.55,'#1d1650');g.addColorStop(1,'#0c0a26');x.fillStyle=g;x.fillRect(0,0,W,H);
+  // soft snow dots
+  let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;x.fillStyle='rgba(255,255,255,.55)';for(let i=0;i<(W*H)/9000;i++){x.globalAlpha=.15+.5*r();x.beginPath();x.arc(r()*W,r()*H,1+2.2*r()*W/1024,0,6.283);x.fill()}x.globalAlpha=1}
+function tri(cx,cy,R,size,t){const pts=[[cx,cy-R],[cx+R*.95,cy+R*.62],[cx-R*.95,cy+R*.62]];const cis=[0,2,4];
+  NLArt.drawTriangle(x,pts,cis,'lit',t,1);
+  for(let i=0;i<3;i++){const a=pts[i],b=pts[(i+1)%3];NLArt.drawCord(x,a[0],a[1],b[0],b[1],'lit',t,1,size)}
+  pts.forEach((p,i)=>NLArt.drawBulb(x,p[0],p[1],size,cis[i],'lit',t));}
+async function go(){ if(NLArt.ready) await NLArt.ready('../www/studio-kit/'); await Promise.all(['700 100px Fredoka','600 40px Fredoka'].map(f=>document.fonts.load(f))); if(kind==='splash'){x.fillStyle='#100d30';x.fillRect(0,0,W,H)}else if(kind!=='fg')bg();
+  const t=1.3;
+  if(kind==='icon'){ tri(W/2,H*.53,W*.2,W*.175,t); }
+  else if(kind==='fg'){ tri(W/2,H*.53,W*.16,W*.14,t); }
+  else if(kind==='splash'){ tri(W/2,H*.52,W*.09,W*.08,t); }
+  else if(kind==='feature'){ // 1024x500
+    tri(W*.79,H*.55,H*.27,H*.22,t);
+    x.textBaseline='alphabetic';x.font=`700 ${H*.27}px Fredoka`;x.lineJoin='round';
+    const txt=(s,y,fill)=>{x.lineWidth=H*.05;x.strokeStyle='#2a1260';x.strokeText(s,W*.07,y);x.fillStyle=fill;x.fillText(s,W*.07,y)};
+    txt('Xmas',H*.42,'#ffffff');txt('Lights',H*.71,'#ffd23f');
+    x.font=`600 ${H*.06}px Fredoka`;x.fillStyle='rgba(255,255,255,.85)';x.fillText('Connect the bulbs. Light up Christmas!',W*.07,H*.88);
+  }
+  document.title='done';}
+go();
+</script>

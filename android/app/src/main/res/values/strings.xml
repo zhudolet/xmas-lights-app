@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Xmas Lights</string>
+    <string name="title_activity_main">Xmas Lights</string>
+    <string name="package_name">app.xmaslights.game</string>
+    <string name="custom_url_scheme">app.xmaslights.game</string>
+</resources>

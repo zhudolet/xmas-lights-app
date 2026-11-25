@@ -1,0 +1,25 @@
+{
+  "name": "xmas-lights-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Store wrapper (Capacitor) for the Xmas Lights HTML5 game",
+  "scripts": {
+    "web": "node scripts/build-web.mjs",
+    "sync": "node scripts/build-web.mjs && npx cap sync",
+    "assets": "npx capacitor-assets generate --iconBackgroundColor '#141433' --splashBackgroundColor '#141433' --iconBackgroundColorDark '#141433' --splashBackgroundColorDark '#141433'"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "8.3.0",
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource/fredoka": "5.3.0",
+    "@fontsource/nunito": "5.3.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "4.0.0",
+    "@capacitor/cli": "8.6.0"
+  }
+}
