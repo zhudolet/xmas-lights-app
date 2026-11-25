@@ -559,17 +559,20 @@ button.nl-pill-btn{border:0;cursor:pointer}
 .kitfill .nl-scrim{position:fixed}
 .kitfill .nl-card{width:min(340px,calc(100% - 28px))}
 .medal-cv{width:120px;height:120px}
+/* design v4.3.2: the mascot's light used to be cut off by its 120px canvas (a visible box). The canvas now overhangs the medal and lets clicks through. */
+.nl-medal canvas.medal-cv{position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%);pointer-events:none}
+.win-dance{position:relative;pointer-events:none}
 .fail-meter{display:flex;align-items:center;gap:10px;margin:12px 6px 4px}.fail-meter .nl-meter{flex:1;height:18px}
 .kitfill .nl-sunburst{position:fixed}
 .win-ui{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 56px) 0 130px;min-height:100%}
 .win-ui .nl-stars{margin-top:30px}
-.win-dance{width:min(360px,100%);height:130px;margin-top:-6px}
+.win-dance{width:min(360px,100%);height:190px;margin-top:-66px}
 .win-card{box-sizing:border-box;width:min(340px,calc(100% - 32px));padding:20px 20px 16px;margin-top:4px}
 .win-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:8px;border-top:3px dashed #d9bf8e}.win-total .nl-num{font-size:34px}
 .win-line{margin-top:10px;text-align:center;font-size:19px}
 .win-btns{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);display:flex;justify-content:center;align-items:center;gap:14px;z-index:6}
 .win-btns .nl-round{width:56px;height:56px}
-@media (max-height:780px){.win-ui{padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:110px}.win-big{font-size:50px}.win-ui .nl-stars{margin-top:10px;transform:scale(.8);margin-bottom:-14px}.win-dance{height:92px}.win-card{padding:14px 18px 12px}.win-total .nl-num{font-size:28px}.win-line{font-size:17px;margin-top:6px}.win-btns{bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}}
+@media (max-height:780px){.win-ui{padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:110px}.win-big{font-size:50px}.win-ui .nl-stars{margin-top:10px;transform:scale(.8);margin-bottom:-14px}.win-dance{height:152px}.win-card{padding:14px 18px 12px}.win-total .nl-num{font-size:28px}.win-line{font-size:17px;margin-top:6px}.win-btns{bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}}
 #sMap{background:#7a2a1c center/cover no-repeat}
 #mapList{position:relative;min-height:100%}
 #mapList .topbar{position:sticky;top:0;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 0}
@@ -811,7 +814,7 @@ button.nl-pill-btn{border:0;cursor:pointer}
 const W=1000, BR=33, PAD=110;
 // AK: art zoom for journey on small screens. Visual only: every rule still uses BR, U and the level's own radii.
 let AK=1;const BODY=2*BR*1.08; // drawn bulb glass width in world units at AK 1 (the kit's glass is as wide as its size)
-const BCLR=46; // a cord may not pass this close to another bulb's centre (world units): half the phone-size glass plus a hair. Same as levels/engine.js BULB_CLEAR*780.
+let BCLR=46; // a cord may not pass this close to another bulb's centre (world units): half the phone-size glass plus a hair. Same as levels/engine.js BULB_CLEAR*780.
 function zoomAt(x,y,f){if(AK===1)return f();ctx.save();ctx.translate(x,y);ctx.scale(AK,AK);ctx.translate(-x,-y);try{return f()}finally{ctx.restore()}}
 const PAL=[[255,84,84],[255,196,80],[90,214,120],[96,164,255],[255,112,200],[255,146,64]];
 const ICE=[150,222,255];
@@ -866,21 +869,25 @@ const PUZ=[
 
 // ---------- audio ----------
 let AC=null, master=null, noiseBuf=null, wind=null;
-let fxBus=null;
+let fxBus=null, limIn=null, outGain=null;
+let sfxVoices=0, lastPtSnd=0; const SFX_MAX_VOICES=48, OUTV=1;
 // surface sounds follow the finger (or Frost) across the stereo field: the tingle of a sound moving ear to ear
 function fxPan(sx){if(!AC||!fxBus||!fxBus.pan)return;fxBus.pan.setTargetAtTime(clamp((sx/SW-.5)*1.5,-.75,.75),AC.currentTime,.04)}
 function initAudio(){
   if(AC) {if(AC.state==='suspended')AC.resume();return}
   try{
     AC=new (window.AudioContext||window.webkitAudioContext)();
-    master=AC.createGain(); master.gain.value=muted?0:.8;
+    master=AC.createGain(); master.gain.value=.8;
     fxBus=AC.createStereoPanner?AC.createStereoPanner():AC.createGain();fxBus.connect(master);
-    const comp=AC.createDynamicsCompressor(); comp.threshold.value=-18; comp.ratio.value=3;
+    const comp=AC.createDynamicsCompressor(); comp.threshold.value=-18; comp.ratio.value=3; comp.attack.value=.012; comp.release.value=.25;
+    // safety stage: one shared output with a soft clip that is clean below 0.7 and rounds off above it, so piles of sounds can't hard-clip
+    limIn=AC.createGain(); const sc=AC.createWaveShaper(); {const n=4096,c=new Float32Array(n),K=.7;for(let i=0;i<n;i++){const x=(i/(n-1)*2-1)*1.6,a=Math.abs(x);c[i]=Math.sign(x)*(a<=K?a:K+(.98-K)*Math.tanh((a-K)/(.98-K)))}sc.curve=c;sc.oversample='4x'}
+    outGain=AC.createGain(); outGain.gain.value=muted?0:OUTV; const pre=AC.createGain(); pre.gain.value=1/1.6; limIn.connect(outGain); outGain.connect(pre); pre.connect(sc); sc.connect(AC.destination);
     // gentle room reverb
     const conv=AC.createConvolver(); const len=AC.sampleRate*2.2; const ir=AC.createBuffer(2,len,AC.sampleRate);
     for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)}
     conv.buffer=ir; const wet=AC.createGain(); wet.gain.value=.28;
-    master.connect(comp); master.connect(conv); conv.connect(wet); wet.connect(comp); comp.connect(AC.destination);
+    master.connect(comp); master.connect(conv); conv.connect(wet); wet.connect(comp); comp.connect(limIn);
     noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate); const nd=noiseBuf.getChannelData(0); for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
     // wind bed
     const src=AC.createBufferSource(); src.buffer=noiseBuf; src.loop=true;
@@ -889,11 +896,12 @@ function initAudio(){
     const lfo=AC.createOscillator(); lfo.frequency.value=.07; const lg=AC.createGain(); lg.gain.value=.02; lfo.connect(lg); lg.connect(g.gain);
     src.connect(lp); lp.connect(g); g.connect(master); src.start(); lfo.start(); wind=g;
     musicBus=AC.createGain(); musicBus.gain.value=musicOn?.55:0; musicBus.connect(master); startMusic(); setAmbience();
+    if(window.NLSfx&&NLSfx.init){try{NLSfx.init(AC,limIn);NLSfx.__ready=1}catch(e){}}
   }catch(e){AC=null}
 }
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
-function osc(type,f,t,a,peak,dec,dest){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);o.connect(g);g.connect(dest||master);env(g,t,a,peak,dec);o.start(t);o.stop(t+a+dec+.05);return o}
-function noise(t,dur,type,f,q,peak,dest){const s=AC.createBufferSource();s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();s.connect(fl);fl.connect(g);g.connect(dest||master);env(g,t,.004,peak,dur);s.start(t,Math.random()*1.5);s.stop(t+dur+.05);return fl}
+function osc(type,f,t,a,peak,dec,dest){if(!dest&&sfxVoices>=SFX_MAX_VOICES)return {frequency:{exponentialRampToValueAtTime(){},setValueAtTime(){},linearRampToValueAtTime(){}},detune:{value:0}};const o=AC.createOscillator(),g=AC.createGain();if(!dest){sfxVoices++;o.onended=()=>{sfxVoices--}}o.type=type;o.frequency.setValueAtTime(f,t);o.connect(g);g.connect(dest||master);env(g,t,a,peak,dec);o.start(t);o.stop(t+a+dec+.05);return o}
+function noise(t,dur,type,f,q,peak,dest){if(!dest&&sfxVoices>=SFX_MAX_VOICES)return {frequency:{value:0,exponentialRampToValueAtTime(){},setValueAtTime(){}},Q:{value:0}};const s=AC.createBufferSource();if(!dest){sfxVoices++;s.onended=()=>{sfxVoices--}}s.buffer=noiseBuf;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();s.connect(fl);fl.connect(g);g.connect(dest||master);env(g,t,.004,peak,dur);s.start(t,Math.random()*1.5);s.stop(t+dur+.05);return fl}
 const SFX={
   bell(freq,vol=1,delay=0){if(!AC)return;const t=AC.currentTime+delay;[[1,.22,1.6],[2.01,.08,1.1],[2.76,.06,.8],[5.4,.03,.45],[8.93,.015,.25]].forEach(([m,p,d])=>osc('sine',freq*m,t,.004,p*vol,d))},
   pluck(){if(!AC)return;const t=AC.currentTime;osc('triangle',196,t,.003,.12,.18);noise(t,.04,'bandpass',2400,1.2,.05)},
@@ -1017,7 +1025,8 @@ function setAmbience(){
 }
 function setTrack(v){if(!TRACKS[v])return;track=v;store.set('track',v);document.querySelectorAll('#trk button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===v)));
   if(AC&&musicTimer){musicBar=0;musicNext=AC.currentTime+.4;if(musicBus&&musicOn){const t=AC.currentTime;musicBus.gain.cancelScheduledValues(t);musicBus.gain.setValueAtTime(.0001,t);musicBus.gain.setTargetAtTime(.55,t+.35,.3)}}setHiss()}
-function startMusic(){if(!AC||musicTimer)return;musicNext=AC.currentTime+.3;setHiss();musicTimer=setInterval(()=>{if(!AC)return;const T=TRACKS[track];while(musicNext<AC.currentTime+.6){T.bar(musicNext,musicBar++);musicNext+=T.beat()*T.beats}},120)}
+function startMusic(){if(!AC||musicTimer)return;musicNext=AC.currentTime+.3;setHiss();musicTimer=setInterval(()=>{if(!AC)return;if(!musicOn){musicNext=Math.max(musicNext,AC.currentTime+.3);return}const T=TRACKS[track];while(musicNext<AC.currentTime+.6){T.bar(musicNext,musicBar++);musicNext+=T.beat()*T.beats}},120)}
+function duckMusic(){if(!AC||!musicBus||!musicOn)return;const t=AC.currentTime;musicBus.gain.cancelScheduledValues(t);musicBus.gain.setTargetAtTime(.3,t,.03);musicBus.gain.setTargetAtTime(.55,t+.5,.35)}
 function setMusic(on){musicOn=on;store.set('music',on);if(musicBus){musicBus.gain.cancelScheduledValues(AC.currentTime);musicBus.gain.setTargetAtTime(on?.55:0,AC.currentTime,.3)}$('bMusic').textContent=on?'Music on':'Music off';$('bMusic').setAttribute('aria-pressed',String(on))}
 // ---------- finger-in-snow: continuous swish + granular crunch, driven by finger speed ----------
 const snowFx={on:false,nodes:null,lastMove:0,acc:0};
@@ -1197,24 +1206,40 @@ function buzzStart(){if(!AC||buzzFx.n)return;const t=AC.currentTime;
   o.connect(f);o2.connect(f);f.connect(g);g.connect(master);o.start(t);o2.start(t);buzzFx.n={o,o2,f,g}}
 function buzzSet(v,surge){const n=buzzFx.n;if(!n)return;const t=AC.currentTime;n.g.gain.setTargetAtTime(.0001+v*(surge?.22:.11),t,.008);n.f.frequency.setTargetAtTime(surge?520:240,t,.02)}
 function buzzStop(){const n=buzzFx.n;if(!n)return;const t=AC.currentTime;n.g.gain.setTargetAtTime(.0001,t,.02);n.o.stop(t+.2);n.o2.stop(t+.2);buzzFx.n=null}
-// the bulb the cord approaches flickers erratically: dim, then bursts of hard on/off with surges, more often the closer you get
+// design v4.3.2 flicker: the bulb the cord approaches warms up like a struggling filament: a low ember that never goes fully
+// dead, frequent hard on/off bursts and white surges, more and stronger the closer you get. Once the cord is about to
+// snap onto a legal bulb, that bulb fights to switch on: mostly on, with sharp drop-outs, stutters and surges.
 function nearFx(){
   const d=G&&G.drag;
   if(!d){if(buzzFx.n)buzzStop();return}
-  const tn=now();const nb=d.near?d.near.i:-1;
+  const tn=now();
+  const ti=(d.target>=0&&!d.why&&G.bulbs[d.target])?d.target:-1;
+  if(d.snI!==ti){if(d.snI>=0&&G.bulbs[d.snI]){G.bulbs[d.snI].snapFl=null;G.bulbs[d.snI].snapSurge=false}d.snI=ti;d.sBurst=0}
+  const nb=d.near?d.near.i:-1;
   if(d.flI!==nb){if(d.flI>=0&&G.bulbs[d.flI])G.bulbs[d.flI].fl=0;d.flI=nb;d.burst=0}
-  if(nb<0){d.rope.flick=0;buzzSet(0);return}
+  let bz=0,bs=false;
+  if(ti>=0){const b=G.bulbs[ti];buzzStart();
+    if(!d.sBurst||tn>d.sBurst){d.sMode=Math.random();d.sBurst=tn+(d.sMode>.82?rnd(160,300):rnd(70,220));if(d.sMode>.82)SFX.surge(.7)}
+    let lvl;
+    if(d.sMode>.82)lvl=rnd(.92,1);                                   // surge: white hot
+    else if(d.sMode<.28)lvl=Math.random()<.5?rnd(0,.08):rnd(.55,1);  // stutter
+    else lvl=Math.random()<.1?rnd(.05,.2):rnd(.72,1);                 // mostly on, sharp drop-outs
+    b.snapFl=lvl;b.snapSurge=d.sMode>.82;bz=lvl;bs=b.snapSurge;
+    if(lvl<.25&&Math.random()<.25)SFX.crackle(.8);
+    if(bs&&Math.random()<.12)haptic(6)}
+  if(nb<0){d.rope.flick=bz;buzzSet(bz,bs);return}
   buzzStart();const b=G.bulbs[nb],p=d.near.p;
-  if(!d.burst||tn>d.burst){d.burst=0;if(Math.random()<.015+.22*p*p){d.burst=tn+rnd(140,520)*(.6+p);d.surge=Math.random()<.25+.45*p;if(d.surge){SFX.surge(p)}}}
+  if(!d.burst||tn>d.burst){d.burst=0;if(Math.random()<.05+.35*p*p){d.burst=tn+rnd(160,560)*(.6+p);d.surge=Math.random()<.3+.5*p;if(d.surge){SFX.surge(p)}}}
   let lvl;
-  if(d.burst){const on=Math.random()<(d.surge?.7:.5);lvl=on?(d.surge?1:rnd(.55,.95)):rnd(0,.06);if(on&&Math.random()<.35)SFX.crackle(p)}
-  else lvl=Math.random()<.04*p?rnd(.3,.6):.04*p; // stray blips
-  b.fl=lvl;b.surge=d.burst&&d.surge;d.rope.flick=lvl;buzzSet(lvl,b.surge&&lvl>.5);
+  if(d.burst){const on=Math.random()<(d.surge?.75:.6);lvl=on?(d.surge?1:rnd(.65,1)):rnd(.03,.12);if(on&&Math.random()<.35)SFX.crackle(p)}
+  else{const ember=.1+.2*p;lvl=Math.random()<.08+.12*p?rnd(.35,.75):ember*rnd(.6,1.15)} // ember + stray blips
+  b.fl=lvl;b.surge=d.burst&&d.surge;d.rope.flick=Math.max(lvl,bz);
+  if(bz>0)buzzSet(Math.max(bz,lvl*.8),bs||(b.surge&&lvl>.5));else buzzSet(lvl,b.surge&&lvl>.5);
   if(d.surge&&lvl>.9&&Math.random()<.3)haptic(8);
 }
 const SCALE=[523.25,587.33,659.25,783.99,880,1046.5,1174.66,1318.51,1567.98,1760,2093];
 const SCALE_AI=[293.66,329.63,392,440,493.88,587.33,659.25,783.99];
-function setMuted(m){muted=m;store.set('muted',m);if(master)master.gain.value=m?0:.8;$('bSound').textContent=m?'Sound off':'Sound on';$('bSound').setAttribute('aria-pressed',String(!m))}
+function setMuted(m){muted=m;store.set('muted',m);if(outGain)outGain.gain.value=m?0:OUTV;$('bSound').textContent=m?'Sound off':'Sound on';$('bSound').setAttribute('aria-pressed',String(!m))}
 function haptic(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
 
 // ---------- sprites ----------
@@ -1593,10 +1618,11 @@ let particles=[], floats=[], loose=[], fades=[], trail=[];
 // WH: world height. Journey boards stretch vertically on tall screens (an affine stretch keeps every rule true), so props get bigger on phones
 let WH=1000,jTop=false;
 function tallWH(){const aw=innerWidth-12,ah=innerHeight-112-66;const r=ah/aw;return r>1.08?Math.round(W*Math.min(r,1.75)):W}
-function boardPos(p){return [PAD+p[0]*(W-2*PAD),PAD+p[1]*(WH-2*PAD)]}
+function boardPos(p){return [BX+p[0]*U,BY+p[1]*UYc()]}
 function makeBulb(id,p,kind){const [x,y]=boardPos(p);return {id,x,y,alive:true,locked:kind==='topper',kind:kind||'bulb',color:id%PAL.length,bump:0,flicker:0,drop:0,born:now(),gone:0}}
 function newGame(mode,idx,def){
   if(mode!=='journey'&&(WH!==W||jTop)){WH=W;jTop=false;resize()}
+  if(mode!=='journey')jFitReset();
   particles=[];floats=[];loose=[];fades=[];trail=[];gSegs=[];if(SW)buildGround(); // fresh surface every level
   const h=def.h||{};
   const g={mode,idx,def,h,bulbs:[],adj:[],edges:[],edgeMap:new Map(),tris:[],gifts:[],drifts:[],score:{you:0,ai:0},giftsWon:{you:0,ai:0},
@@ -2017,7 +2043,7 @@ function drawBulb(b,t,i){
   const hover=(pointer.hover===i&&canPlay())||(G.sel===i);
   const d=G.drag;const isTarget=d&&d.target===i;
   const snapped=isTarget&&!d.why;const nearOn=d&&d.near&&d.near.i===i&&!isTarget;const sparkA=nearOn?(b.fl||0):0;
-  const live=snapped?1:sparkA;
+  const snapA=snapped?(b.snapFl==null?1:b.snapFl):0;const live=snapped?snapA:sparkA;
   // light pool on snow
   if(live){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.7*live;const s2=BR*10;ctx.drawImage(GLOW[b.color],b.x-s2/2,b.y-s2/2,s2,s2);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
   if(powered||hover){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(powered?.5:.18)*flick;const s1=BR*(powered?9:5);ctx.drawImage(b.kind==='topper'?GLOW_WARM:GLOW[b.color],b.x-s1/2,b.y-s1/2+BR*.4,s1,s1);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
@@ -2028,7 +2054,9 @@ function drawBulb(b,t,i){
   if(nearOn){const ring=.1+.9*sparkA;ctx.strokeStyle=`rgba(255,240,205,${ring})`;ctx.lineWidth=1.5+2.5*sparkA;ctx.beginPath();ctx.arc(0,0,BR*(2.4-.5*d.near.p),0,6.283);ctx.stroke();
     if(sparkA>.2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=rgba(PAL[b.color],.8*sparkA);ctx.lineWidth=9;ctx.stroke();
       ctx.globalAlpha=sparkA*(b.surge?1:.7);const s3=BR*(b.surge?18:12);ctx.drawImage(GLOW[b.color],-s3/2,-s3/2,s3,s3);if(b.surge){ctx.drawImage(GLOW_WHITE,-BR*3,-BR*3,BR*6,BR*6)}ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}}
-  if(snapped){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=rgba(PAL[b.color],.55+.25*Math.sin(t*.03));ctx.lineWidth=7;ctx.beginPath();ctx.arc(0,0,BR*1.9,0,6.283);ctx.stroke();ctx.globalCompositeOperation='source-over'}
+  if(snapped){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=rgba(PAL[b.color],(.3+.5*snapA));ctx.lineWidth=7;ctx.beginPath();ctx.arc(0,0,BR*1.9,0,6.283);ctx.stroke();
+    if(snapA>.2){ctx.globalAlpha=snapA*(b.snapSurge?1:.75);const s4=BR*(b.snapSurge?18:13);ctx.drawImage(GLOW[b.color],-s4/2,-s4/2,s4,s4);if(b.snapSurge)ctx.drawImage(GLOW_WHITE,-BR*3,-BR*3,BR*6,BR*6);ctx.globalAlpha=1}
+    ctx.globalCompositeOperation='source-over'}
   if(isTarget){ctx.strokeStyle=d.why?'rgba(255,170,150,.9)':'rgba(255,240,200,.95)';ctx.lineWidth=2.5;ctx.setLineDash(d.why?[4,5]:[]);ctx.beginPath();ctx.arc(0,0,BR*1.9,0,6.283);ctx.stroke();ctx.setLineDash([])}
   if(hover&&!isTarget){ctx.strokeStyle='rgba(255,240,210,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,BR*1.75+Math.sin(t*.006)*2,0,6.283);ctx.stroke()}
   if(b.kind==='topper'){
@@ -2042,7 +2070,7 @@ function drawBulb(b,t,i){
  // art owns the glass and face, the engine keeps the light
     let lx=pointer.lx??W/2,ly=pointer.ly??W/2;if(d){lx=d.x;ly=d.y}const dist=Math.min(1,Math.hypot(lx-b.x,ly-b.y)/200),ang=Math.atan2(ly-b.y,lx-b.x);
     const on=powered||live>.3;const scared=!!(nearOn||snapped||b.flicker);const blink=((t*.001+i*1.37)%4.2)<.12;
-    NL_HOOKS.drawBulbBody(ctx,0,0,BODY,b.color%6,{lit:on,hover,scared,eyeX:Math.cos(ang)*dist,eyeY:Math.sin(ang)*dist,blink,bright:on?Math.max(.35,flick):Math.min(.8,live)});
+    NL_HOOKS.drawBulbBody(ctx,0,0,BODY,b.color%6,{lit:on,hover,scared,eyeX:Math.cos(ang)*dist,eyeY:Math.sin(ang)*dist,blink,bright:powered?Math.max(.35,flick):Math.min(1,live)});
     if(powered||live){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.6*flick*(powered?1:live);ctx.drawImage(GLOW[b.color],-BR*2.6,-BR*2.9,BR*5.2,BR*5.2);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
     ctx.restore();return}
   // socket
@@ -2295,7 +2323,23 @@ function undo(){ // puzzles only: remove your last cord
 
 // ================= JOURNEY: the main casual mode (levels, cords budget, goals, stars) =================
 // Rules live in plain functions that also run silently (SIM) on cloned state, so hints and the solver use the real rules.
-const U=W-2*PAD;
+// Board fit: each journey level's pieces are spread to use the whole board. U is the horizontal board unit
+// (all rule radii are fractions of it), BUY the vertical one. Rules run in a square frame (y scaled by U/BUY),
+// so any U, BUY and offsets give exactly the same legal moves, crossings and triangles as the level data.
+let U=W-2*PAD,BX=PAD,BY=PAD,BUY=0;
+const UYc=()=>BUY||(WH-2*PAD);
+const FIT_MX=80,FIT_MY=100,FIT_ZMAX=1.4,FIT_ASPECT=1.4;
+function jFitCalc(L,wh){const xs=[],ys=[];const add=(p,r)=>{if(!p||typeof p[0]!=='number')return;r=r||0;xs.push(p[0]-r,p[0]+r);ys.push(p[1]-r,p[1]+r)};
+  (L.b||[]).forEach(p=>add(p));(L.gifts||[]).forEach(p=>add(p,.03));(L.coal||[]).forEach(p=>add(p,.03));(L.hats||[]).forEach(p=>add(p,.03));
+  (L.drifts||[]).forEach(d=>add(d,(d[2]||.06)<1?(d[2]||.06):0));if(L.topper)add(L.topper);
+  (L.snowballs||[]).forEach(s=>{const sp=Array.isArray(s[1])?s[1]:[[s[1],s[2]]];const r=(Array.isArray(s[1])?s[2]:s[3])||.055;sp.forEach(q=>add(q,r))});
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const u0=W-2*PAD,v0=wh-2*PAD;
+  const u=clamp((W-2*FIT_MX)/Math.max(.05,x1-x0),u0,u0*FIT_ZMAX);
+  const v=Math.min((wh-2*FIT_MY)/Math.max(.05,y1-y0),v0*FIT_ZMAX,u*FIT_ASPECT);
+  return {U:u,BUY:v,BX:W/2-(x0+x1)/2*u,BY:wh/2-(y0+y1)/2*v}}
+function jFit(L){const f=jFitCalc(L,WH);U=f.U;BUY=f.BUY;BX=f.BX;BY=f.BY;BCLR=46*U/780}
+function jFitReset(){U=W-2*PAD;BX=PAD;BY=PAD;BUY=0;BCLR=46}
 let SIM=false;
 const JP={TRI:100,DOUBLE:250,MERRY:300,GIFT:500,NOSE:1000,MELT:200,THAW:200,STAR:1000,ENCORE:300};
 const CHAIN_WORDS=['','','Twinkly!','Dazzling!','Merry & Bright!','Blinding!','Visible from space!'];
@@ -2347,7 +2391,7 @@ const wr=r=>r<1?r*U:r; // radius in board units or world units
 
 // fold / unfold / rotate mid-level: re-fit the board's height and move everything with it
 function jRestretch(){const g=G;if(!g||g.mode!=='journey'||!jTop||jRestretch.busy)return;const wh=tallWH();if(wh===WH)return;
-  const k=(wh-2*PAD)/(WH-2*PAD),f=y=>PAD+(y-PAD)*k;jRestretch.busy=true;WH=wh;
+  const oY=BY,oV=UYc(),nf=jFitCalc(g.L,wh),k=nf.BUY/oV,f=y=>nf.BY+(y-oY)*k;jRestretch.busy=true;WH=wh;BUY=nf.BUY;BY=nf.BY;
   try{for(const o of [...g.bulbs,...g.gifts,...g.drifts,...(g.M.coal||[]),...(g.J.hats||[]),...(g.J.snowQ||[])])o.y=f(o.y);
     const bk=g.J.biker;if(bk){bk.P0.y=f(bk.P0.y);bk.P1.y=f(bk.P1.y)}
     for(const e of g.edges){const r=e.rope;if(!r)continue;r.ay=f(r.ay);r.by=f(r.by);for(let i=0;i<r.y.length;i++){r.y[i]=f(r.y[i]);r.py[i]=f(r.py[i])}}
@@ -2357,6 +2401,7 @@ function newJourney(i){
   const L=LEVELS[i];const id=L.id||('lv'+i);attempts[id]=(attempts[id]||0)+1;
   const rng=mulberry(hashStr(id)+(L.seed||0)*101+attempts[id]*7919);
   {const wh=tallWH();if(wh!==WH||!jTop){WH=wh;jTop=true;resize()}}
+  jFit(L);
   const want=L.surface||'snow';if(surface!==want)setSurface(want,true);
   const def={b:L.b.map(p=>[p[0],p[1]]),e:L.e||[],gifts:[],drifts:(L.drifts||[]).map(d=>[d[0],d[1],wr(d[2]||.06),d[3]||'cane']),topper:L.topper?[L.topper[0],L.topper[1]]:null,h:{}};
   const g=newGame('journey',i,def);g.L=L;
@@ -2374,7 +2419,7 @@ function newJourney(i){
   const hats=(L.hats||[]).map(h=>{const [x,y]=boardPos(h);return {x,y,dir:(h[2]||0)*Math.PI/180,color:h[3]||'red',used:false,partner:-1,flash:0}});
   hats.forEach((h,k)=>{h.partner=hats.findIndex((o,j)=>j!==k&&o.color===h.color)});
   const snowQ=(L.snowballs||[]).map(s=>{let spots,r;if(Array.isArray(s[1])){spots=s[1];r=s[2]}else{spots=[[s[1],s[2]]];r=s[3]}const sp=spots[Math.floor(rng()*spots.length)];const [x,y]=boardPos(sp);return {after:s[0],x,y,r:wr(r||.055),done:false,warned:false}});
-  const bk=L.biker?{after:L.biker[0],P0:{x:PAD+L.biker[1]*U,y:PAD+L.biker[2]*(WH-2*PAD)},P1:{x:PAD+L.biker[3]*U,y:PAD+L.biker[4]*(WH-2*PAD)},done:false,warned:false}:null;
+  const bk=L.biker?{after:L.biker[0],P0:(([x,y])=>({x,y}))(boardPos([L.biker[1],L.biker[2]])),P1:(([x,y])=>({x,y}))(boardPos([L.biker[3],L.biker[4]])),done:false,warned:false}:null;
   if(bk&&bk.after<=1)bk.warned=true;snowQ.forEach(s=>{if(s.after<=1)s.warned=true});
   if(bk){const dx=bk.P1.x-bk.P0.x,dy=bk.P1.y-bk.P0.y,l=Math.hypot(dx,dy)||1;bk.P0={x:bk.P0.x-dx/l*PAD,y:bk.P0.y-dy/l*PAD};bk.P1={x:bk.P1.x+dx/l*PAD,y:bk.P1.y+dy/l*PAD}}
   g.J={budget:L.budget,used:0,score:0,pot:0,shown:0,chain:0,trisLit:0,matches:0,hats,snowQ,biker:bk,nosesLit:new Set(),melted:0,thawed:0,
@@ -2470,15 +2515,15 @@ function jThaw(k,delay){const g=G,J=g.J;const B=g.bulbs[k];if(!B.frozen)return;B
   if(!SIM)setTimeout(()=>{SFX.crackle(1);SFX.crackle(.8);sfx('thaw');SFX.bell(1760,.4);jFlyWorld(B.x,B.y,JP.THAW,'Thawed!',[170,225,255]);B.bump=1;for(let q=0;q<26;q++){const an=Math.random()*6.28,sp=rnd(60,220);particles.push({x:B.x,y:B.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-50,life:0,max:rnd(.5,1),sz:rnd(1.5,3),c:[200,240,255],shard:1})}},delay)}
 // Santa hats: light drops into one hat, a spark shoots out of its partner along that hat's aim
 // rules that measure distance or aim run in the level's square frame, so the portrait stretch never changes a solution
-const KY=()=>(W-2*PAD)/(WH-2*PAD),sqY=y=>PAD+(y-PAD)*KY(),unY=y=>PAD+(y-PAD)/KY(),sqP=v=>({x:v.x,y:sqY(v.y)});
+const KY=()=>U/UYc(),sqY=y=>BY+(y-BY)*KY(),unY=y=>BY+(y-BY)/KY(),sqP=v=>({x:v.x,y:sqY(v.y)});
 function distSegSq(px,py,a,b){return distSeg(px,sqY(py),sqP(a),sqP(b))}
 function jFireHat(k,delay){
   const g=G,J=g.J;const h=J.hats[k];if(h.used)return;h.used=true;let out=J.hats[h.partner];if(!out)return;out.used=true;
   const SPD=.9;const R=.05*U;let tt=delay+260;const path=[{x:h.x,y:h.y,t:delay},{x:out.x,y:out.y,t:tt,jump:1}];h.flash=now()+delay;out.flash=now()+tt;
   let x=out.x,y=sqY(out.y),dir=out.dir,dist=0,cur=out;
   for(let guard=0;guard<600;guard++){
-    x+=Math.cos(dir)*6;y+=Math.sin(dir)*6;dist+=6;tt+=6/SPD;
-    if(x<-20||y<-20||x>W+20||y>W+20){path.push({x,y:unY(y),t:tt});break}
+    const st=6*U/780;x+=Math.cos(dir)*st;y+=Math.sin(dir)*st;dist+=st;tt+=6/SPD; // steps and edges in board units, so a fitted board traces the same path
+    const nx=(x-BX)/U,ny=(y-BY)/U;if(nx<-130/780||ny<-130/780||nx>910/780||ny>910/780){path.push({x,y:unY(y),t:tt});break}
     if(dist<R)continue;
     let done=false;
     for(const gf of g.gifts){if(gf.layers>0&&Math.hypot(gf.x-x,sqY(gf.y)-y)<R){path.push({x,y:unY(y),t:tt,hit:1});jHitGift(gf,tt);done=true;break}}
@@ -2503,7 +2548,7 @@ async function jScripted(g){
       else{J.bike={t0:now(),dur:1900,P0:bk.P0,P1:bk.P1,x:bk.P0.x,y:bk.P0.y};SFX.whoosh(1.4);for(let k=1;k<6;k++)setTimeout(()=>{if(J.bike){if(window.NLSfx&&NLSfx.snip)NLSfx.snip();else SFX.tick()}},k*330);hint('Snip snip!');await wait(2000);if(g!==G)return;J.bike=null}}}
 }
 function jLandSnowball(s){
-  const g=G;for(const e of g.edges.slice()){if(e.lit)continue;if(distSegSq(s.x,s.y,g.bulbs[e.a],g.bulbs[e.b])<s.r+4){removeEdge(e);if(!SIM)sfx('cordSnap')}}
+  const g=G;for(const e of g.edges.slice()){if(e.lit)continue;if(distSegSq(s.x,s.y,g.bulbs[e.a],g.bulbs[e.b])<s.r+4*U/780){removeEdge(e);if(!SIM)sfx('cordSnap')}}
   const d={x:s.x,y:s.y,r:s.r,ttl:Infinity,born:now(),melt:0,kind:'snowball',name:'A snowball',rot:0,wob:0};g.drifts.push(d);g.M.drifts=g.drifts;
   if(!SIM){if(window.NLSfx&&NLSfx.splat)NLSfx.splat(clamp((s.x/W)*2-1,-1,1));else{SFX.thud();SFX.crunch(3)}haptic(25);for(let k=0;k<30;k++){const an=Math.random()*6.28,sp=rnd(60,260);particles.push({x:s.x,y:s.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-60,life:0,max:rnd(.4,.9),sz:rnd(2,4.5),c:[240,246,255],snow:1})}}
 }
@@ -2595,7 +2640,7 @@ function jUseCocoa(){const g=G;if(!isJ()||cocoa<=0)return;if(!TEST){cocoa--;stor
 function jFly(f){const J=G&&G.J;if(!J||SIM)return;f.t0=now();f.hold=f.hold??380;J.flies.push(f)}
 function jUpdate(dt,t){
   const g=G;if(!g||!g.J)return;const J=g.J;
-  for(const f of J.flies){const p=(t-f.t0-f.hold)/f.dur;if(p>=1&&!f.arrived){f.arrived=1;if(f.onArrive)f.onArrive();if(f.pts){J.pot+=f.pts;const el=$('jScoreWrap');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');SFX.tick();SFX.tink(Math.floor(J.pot/100))}}}
+  for(const f of J.flies){const p=(t-f.t0-f.hold)/f.dur;if(p>=1&&!f.arrived){f.arrived=1;if(f.onArrive)f.onArrive();if(f.pts){J.pot+=f.pts;const el=$('jScoreWrap');el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');if(AC&&AC.currentTime-lastPtSnd>.07){lastPtSnd=AC.currentTime;SFX.tick();SFX.tink(Math.floor(J.pot/100));duckMusic()}}}}
   J.flies=J.flies.filter(f=>!f.arrived);
   if(g.over&&!J.flies.length)J.pot=Math.max(J.pot,J.score);
   const target=Math.min(J.pot,J.score);J.shown+=(target-J.shown)*Math.min(1,dt*10);if(Math.abs(target-J.shown)<1)J.shown=target;
@@ -2861,7 +2906,7 @@ const hasFX=()=>!!window.NLFX, hasSfx=()=>!!(window.NLSfx&&window.NLSfx.__ready)
 // board events keep the original game sounds (Zeljko: "sfx from this file, was the best"); the kit's synth only voices the UI
 const ORIG_SFX={double:()=>SFX.bell(1318.5,.6),noseLit:()=>{SFX.bell(880,.7);SFX.jingle(.5)},snowballWarn:()=>SFX.tick(),cocoa:()=>{SFX.pop();SFX.jingle(.6)}};
 const BOARD_SFX=new Set(['triangleLit','double','merryMatch','giftUnwrap','noseLit','snowballMelt','thaw','hatIn','hatOut','sparkHit','trollThrow','snowballWarn','snowballLand','cordSnap','bikerPass','plugCascade','topperUnlock','win','fail','cocoa']);
-function sfx(name,...a){if(BOARD_SFX.has(name)){if(ORIG_SFX[name]&&AC)ORIG_SFX[name]();return}try{if(window.NLSfx&&NLSfx[name]&&AC){if(!NLSfx.__ready){NLSfx.init(AC);NLSfx.__ready=1}NLSfx[name](...a)}}catch(e){}}
+function sfx(name,...a){if(BOARD_SFX.has(name)){if(ORIG_SFX[name]&&AC)ORIG_SFX[name]();return}try{if(window.NLSfx&&NLSfx[name]&&AC){if(!NLSfx.__ready){NLSfx.init(AC,limIn||undefined);NLSfx.__ready=1}NLSfx[name](...a)}}catch(e){}}
 const KA=(n,...a)=>window.NLArt?NLArt.dataUrl(n,...a):'';
 const CHR=n=>KIT+'characters/'+n+'.webp';
 function goalImg(type){switch(type){
@@ -3051,7 +3096,7 @@ function openJIntro(i){
     <button class="nl-round cream nl-close" data-ico="close" id="jiBack" aria-label="Back to levels"></button></div></div>`;
   fillIcons($('jiCard'));
   $('jiGo').onclick=()=>{initAudio();sfx('button');jBegin()};$('jiBack').onclick=()=>{sfx('tap');openMap()};
-  show('sJIntro');sfx('popIn');const ci=i%6;addMascot($('jiCard').querySelector('.medal-cv'),(x,w,h,t)=>NLArt.drawMascot(x,w/2,h*.56,72,ci,'happy',t));
+  show('sJIntro');sfx('popIn');const ci=i%6;addMascot($('jiCard').querySelector('.medal-cv'),(x,w,h,t)=>NLArt.drawMascot(x,w/2,h/2+7,72,ci,'happy',t));
 }
 function jShowResult(win,stars,earned){
   const g=G,J=g.J;const card=$('jrCard');hint('');
@@ -3067,7 +3112,7 @@ function jShowResult(win,stars,earned){
         <div class="nl-hand win-line">${esc(g.L.win||bagPick(((window.NL_CHAPTERS||[])[chapterOf(g.L)]||{}).wins||WIN_LINES))}${earned?' (+1 hot cocoa!)':''}</div></div></div>
       <div class="win-btns"><button class="nl-round cream" data-ico="restart" id="jrRe" aria-label="Replay"></button><button class="nl-btn green shine" id="jrNext" style="min-width:180px">${g.idx+1<LEVELS.length?'Next':'Finish'}</button><button class="nl-round cream" data-ico="map" id="jrMap" aria-label="Levels"></button></div>`;
     fillIcons(card);show('sJResult');sfx('popIn');
-    addMascot(card.querySelector('.win-dance'),(x,w,h,t)=>{for(let k=0;k<5;k++)NLArt.drawMascot(x,w/2+(k-2)*Math.min(66,w/5.5),h*.62,40,(g.idx+k)%6,'happy',t+k*.3)});
+    addMascot(card.querySelector('.win-dance'),(x,w,h,t)=>{for(let k=0;k<5;k++)NLArt.drawMascot(x,w/2+(k-2)*Math.min(66,w/5.5),h-(h>170?50:35),40,(g.idx+k)%6,'happy',t+k*.3)});
     setTimeout(()=>{if(!card.isConnected)return;NLFX.stars($('jrStars'),stars);NLFX.countUp?NLFX.countUp($('jrScore'),0,J.score,1400):($('jrScore').textContent=J.score.toLocaleString('en-US'))},450);
     $('jrNext').onclick=()=>{sfx('button');g.idx+1<LEVELS.length?openJIntro(g.idx+1):openMap()};
   }else{
@@ -3077,7 +3122,7 @@ function jShowResult(win,stars,earned){
     const prog=Math.min(.97,st.reduce((s,q)=>s+Math.min(1,q.have/q.need),0)/Math.max(1,st.length));const close=prog>=.5&&n<=1;const noRoom=!anyMove(g.M);const FL=window.NL_FAIL_LINES||{};
     card.innerHTML=`<div class="nl-scrim"><div class="nl-card nl-in" style="padding-top:44px">
       <div class="nl-ribbon red"><span>${close?'So close!':noRoom?'No room left':'Out of cords'}</span></div>
-      <div class="nl-medal" style="width:120px;height:120px;filter:saturate(.7)"><canvas class="medal-cv" style="width:110px;height:110px"></canvas></div>
+      <div class="nl-medal" style="width:120px;height:120px;filter:saturate(.7)"><canvas class="medal-cv"></canvas></div>
       <div style="margin-top:14px"><span class="nl-display red" data-text="${esc(head)}" style="font-size:${head.length>18?28:34}px">${esc(head)}</span></div>
       <div class="nl-quip">${esc(g.L.fail||bagPick(noRoom&&FL.stuck?FL.stuck:close?(FL.close||CLOSE_LINES):(FL.far||FAIL_LINES)))}</div>
       <div class="nl-goals">${kitGoals(g,true)}</div>
@@ -3087,7 +3132,7 @@ function jShowResult(win,stars,earned){
         <button class="nl-btn sm cream wide" id="jrRe">Try again</button></div>
       <button class="nl-round cream nl-close" data-ico="close" id="jrMap" aria-label="Back to levels"></button></div></div>`;
     fillIcons(card);show('sJResult');sfx('popIn');
-    addMascot(card.querySelector('.medal-cv'),(x,w,h,t)=>NLArt.drawMascot(x,w/2,h*.54,60,g.idx%6,'sad',t));
+    addMascot(card.querySelector('.medal-cv'),(x,w,h,t)=>NLArt.drawMascot(x,w/2,h/2+4,60,g.idx%6,'sad',t));
     setTimeout(()=>{const m=$('jrMeter');if(m)m.style.setProperty('--fill',prog)},450);
     $('jrCocoa').onclick=()=>{if(cocoa<=0&&!TEST)return;sfx('cocoa');jUseCocoa()};
   }
