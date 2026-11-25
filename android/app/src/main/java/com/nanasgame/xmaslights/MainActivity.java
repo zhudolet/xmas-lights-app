@@ -1,4 +1,4 @@
-package app.xmaslights.game;
+package com.nanasgame.xmaslights;
 
 import com.getcapacitor.BridgeActivity;
 

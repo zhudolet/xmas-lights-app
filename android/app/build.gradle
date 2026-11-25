@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.xmaslights.game"
+    namespace = "com.nanasgame.xmaslights"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.xmaslights.game"
+        applicationId "com.nanasgame.xmaslights"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // bump versionCode by 1 for every upload to Play (CI can pass -PversionCode=N)
