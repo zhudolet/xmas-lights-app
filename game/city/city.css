@@ -1,0 +1,53 @@
+/* Xmas Lights night city map */
+#sMap.citymode{padding:0!important;background:#070a2a!important;display:block;overflow:hidden}
+#sMap.citymode #mapList{position:absolute;inset:0;width:auto;max-width:none;margin:0}
+.xc{position:absolute;inset:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;--lit:0}
+.xc-sky{position:absolute;inset:0;background:
+  radial-gradient(circle at 78% 12%,#fff6d0 0 26px,rgba(255,233,168,.35) 30px,rgba(255,210,122,.08) 70px,transparent 120px),
+  radial-gradient(1.2px 1.2px at 12% 18%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 32% 8%,#fff 50%,transparent 51%),
+  radial-gradient(1.4px 1.4px at 55% 22%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 68% 34%,#fff 50%,transparent 51%),
+  radial-gradient(1.2px 1.2px at 88% 40%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 22% 44%,#fff 50%,transparent 51%),
+  radial-gradient(1.3px 1.3px at 44% 58%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 8% 70%,#fff 50%,transparent 51%),
+  radial-gradient(1.2px 1.2px at 92% 76%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 60% 88%,#fff 50%,transparent 51%),
+  linear-gradient(#070a2a,#121a5a 45%,#1e2470)}
+.xc-glow{position:absolute;inset:0;pointer-events:none;opacity:calc(.15 + var(--lit)*.85);transition:opacity 1.2s;
+  background:radial-gradient(90% 50% at 50% 100%,rgba(255,170,80,.28),transparent 70%),radial-gradient(70% 40% at 30% 60%,rgba(255,90,200,.12),transparent 70%)}
+.xc-cv{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
+.xc-snow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.xc-labels{position:absolute;inset:0;pointer-events:none}
+.xc-n{position:absolute;left:0;top:0;width:0;height:0;font-family:Fredoka,system-ui,sans-serif}
+.xc-n span{position:absolute;left:0;top:0;transform:translate(-50%,-62%);font-weight:700;font-size:13px;color:#fff;text-shadow:0 1.5px 0 #0a0d33,0 0 5px #0a0d33;white-space:nowrap}
+.xc-n.done span{color:#4a2400;text-shadow:0 1px 0 #ffe9a0}
+.xc-n.lock span{opacity:.55}
+.xc-n.boss span{transform:translate(-50%,-190%)}
+.xc-n .st{position:absolute;left:0;top:0;transform:translate(-50%,45%);font-style:normal;font-size:8px;letter-spacing:-1px;white-space:nowrap;z-index:1}
+.xc-n.boss .st{transform:translate(-50%,60%)}
+.xc-n .st b{color:#ffd23a;text-shadow:0 1px 0 #7a3a00,0 0 6px rgba(255,200,80,.8)}
+.xc-n .st b.o{color:rgba(20,26,82,.85);text-shadow:0 1px 0 rgba(160,170,255,.5)}
+.xc-n.cur::before{content:"";position:absolute;left:-26px;top:-17px;width:52px;height:30px;border-radius:50%;border:2.5px solid #ff8ad0;box-shadow:0 0 14px #ff4fa8;animation:xcPing 1.4s ease-out infinite}
+@keyframes xcPing{from{transform:scale(.7);opacity:1}to{transform:scale(1.5);opacity:0}}
+.xc-mk{position:absolute;left:-36px;top:-104px;width:72px;height:86px;animation:xcBob 1.6s ease-in-out infinite}
+@keyframes xcBob{50%{transform:translateY(-6px)}}
+.xc-b{position:absolute;left:0;top:0;background:linear-gradient(#2c357f,#161b52);border:2px solid #ffd98a;border-radius:14px;padding:5px 13px 7px;
+  box-shadow:0 3px 0 #0a0d33,0 0 14px rgba(255,190,90,.35);font-family:Fredoka,system-ui,sans-serif;font-weight:700;color:#ffe9b8;font-size:clamp(18px,1.1vw + 14px,30px);line-height:1.1;white-space:nowrap;transition:box-shadow .6s}
+.xc-b small{display:block;font-size:clamp(11px,.5vw + 9px,16px);letter-spacing:.12em;color:#8fd8ff;margin-bottom:2px}
+.xc-b.lit{background:linear-gradient(#ffd86a,#ff9a2a);color:#4a1e00;border-color:#fff3c8;box-shadow:0 3px 0 #9a4a00,0 0 22px rgba(255,180,60,.75)}
+.xc-b.lit small{color:#7a3400}
+.xc-b.pop{animation:xcPop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes xcPop{0%{scale:1}40%{scale:1.25}100%{scale:1}}
+.xc-callout{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:6;font-family:Fredoka,system-ui,sans-serif;font-weight:700;
+  font-size:26px;color:#fff3d0;text-shadow:0 3px 0 #7a3400,0 0 20px rgba(255,180,60,.9);animation:xcCall 2.6s ease-out forwards;white-space:nowrap}
+.xc-callout small{display:block;font-size:12px;letter-spacing:.18em;color:#ffd98a}
+.xc-callout b{display:block;font-size:40px;color:#ffd23a}
+@keyframes xcCall{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}20%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
+/* HUD on top of the map */
+.xc-ui{position:absolute;z-index:5}
+.xc-top{left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 18px;background:linear-gradient(rgba(7,10,42,.9),transparent)}
+.xc-top .grow{flex:1}
+.xc-title{position:absolute;left:0;right:0;top:calc(58px + env(safe-area-inset-top,0px));text-align:center;pointer-events:none;z-index:4;font-family:Fredoka,system-ui,sans-serif}
+.xc-title b{display:block;font-weight:700;font-size:22px;color:#fff3d0;text-shadow:0 2px 0 #0a0d33,0 0 14px rgba(255,190,90,.6)}
+.xc-meter{display:inline-block;width:170px;height:12px;border-radius:8px;background:#0d1244;border:2px solid #ffd98a;overflow:hidden;margin-top:4px;box-shadow:0 2px 0 #0a0d33}
+.xc-meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb347,#ffe98a);box-shadow:0 0 10px #ffc21a;transition:width 1.2s}
+.xc-title small{display:block;font-weight:700;font-size:13px;letter-spacing:.14em;color:#8fd8ff;margin-top:2px}
+.xc-bot{left:0;right:0;bottom:0;display:flex;justify-content:center;padding:26px 0 calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(7,10,42,.85));pointer-events:none}
+.xc-bot>*{pointer-events:auto}

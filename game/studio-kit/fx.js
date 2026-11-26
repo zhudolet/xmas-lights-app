@@ -48,7 +48,12 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const ease={ outBack:(t,s=1.7)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2), outCubic:t=>1-Math.pow(1-t,3), inOutCubic:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2, inQuad:t=>t*t };
 
 function starPath(c,r,inner=.38,n=4){ c.beginPath(); for(let i=0;i<n*2;i++){const a=i*Math.PI/n-Math.PI/2, rr=i%2?r*inner:r; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);} c.closePath(); }
-function glowDot(c,x,y,r,col,a){ const g=c.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A',0)); c.fillStyle=g; c.fillRect(x-r,y-r,r*2,r*2); }
+/* perf v4.4: one pre-drawn glow sprite per colour, stamped with drawImage. Building a new radial gradient for
+   every dot on every frame (hundreds per frame while coins fly) made phones stutter at each win. */
+const GLOWS=new Map();
+function glowSprite(col){ let s=GLOWS.get(col); if(s) return s; s=document.createElement('canvas'); s.width=s.height=64; const g2=s.getContext('2d');
+  const g=g2.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,col.replace('A',1)); g.addColorStop(1,col.replace('A',0)); g2.fillStyle=g; g2.fillRect(0,0,64,64); GLOWS.set(col,s); return s; }
+function glowDot(c,x,y,r,col,a){ if(r<=0||a<=0) return; const ga=c.globalAlpha; c.globalAlpha=ga*Math.min(1,a); c.drawImage(glowSprite(col),x-r,y-r,r*2,r*2); c.globalAlpha=ga; }
 
 /* ---- glint: flies along a bezier into the pot ---------------- */
 function Glint(x0,y0,x1,y1,delay,dur,onLand,tint){
@@ -94,17 +99,22 @@ F.confetti=(x,y,n=60)=>{ ensure(); for(let i=0;i<n;i++) add(Confetti(x,y)); };
 function el(tag,cls,html){ const e=document.createElement(tag); e.className=cls; if(html!=null) e.innerHTML=html; return e; }
 function layer(){ let L=document.querySelector('.nl-fx-layer'); if(!L){ L=el('div','nl-fx-layer'); document.body.appendChild(L);} return L; }
 
-F.init=(o={})=>{ ensure(); Object.assign(st,{pot:o.pot||st.pot,score:o.score||st.score,meter:o.meter||st.meter}); if(o.thresholds){st.thresholds=o.thresholds; st.max=o.thresholds[2];} S=o.sfx||window.NLSfx||null; st.value=st.shown=o.start||0; render(); };
+F.init=(o={})=>{ ensure(); Object.assign(st,{pot:o.pot||st.pot,score:o.score||st.score,meter:o.meter||st.meter}); if(o.thresholds){st.thresholds=o.thresholds; st.max=o.thresholds[2];} st.pos=o.positions||null; S=o.sfx||window.NLSfx||null; st.value=st.shown=o.start||0; render(); };
 F.reset=(v=0)=>{ st.value=st.shown=v; render(); };
 F.setThresholds=(th)=>{ st.thresholds=th; st.max=th[2]; render(); };
 function potXY(){ if(!st.pot) return [W/2,40]; const r=st.pot.getBoundingClientRect(); return [r.left+r.width/2,r.top+r.height*.55]; }
 function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
 function render(){
   if(st.score) st.score.textContent=fmt(st.shown);
-  if(st.meter){ const k=Math.min(1,st.shown/st.max); st.meter.style.setProperty('--fill',k);
+  if(st.meter){ let k=Math.min(1,st.shown/st.max);
+    // fixed, evenly spaced star marks (st.pos): the fill is piecewise so it reaches each mark exactly at its threshold
+    if(st.pos&&st.thresholds){ const T=st.thresholds,P=st.pos,v=st.shown; let lo=0,plo=0; k=P[P.length-1];
+      for(let i=0;i<T.length;i++){ if(v<T[i]){ k=plo+(P[i]-plo)*Math.max(0,(v-lo)/Math.max(1,T[i]-lo)); break; } lo=T[i]; plo=P[i]; } }
+    st.meter.style.setProperty('--fill',k);
     st.meter.querySelectorAll('[data-star]').forEach((s,i)=>{ const on=st.shown>=st.thresholds[i]; if(on&&!s.classList.contains('on')){ s.classList.add('on'); const r=s.getBoundingClientRect(); burst(r.left+r.width/2,r.top+r.height/2,18,'rgba(255,220,100,A)',260,6); S&&S.starFill&&S.starFill(i+1);} if(!on) s.classList.remove('on'); }); }
 }
-function potGulp(){ if(!st.pot) return; st.pot.classList.remove('gulp'); void st.pot.offsetWidth; st.pot.classList.add('gulp');
+let gulpT=0;
+function potGulp(){ if(!st.pot) return; const tn=performance.now(); if(tn-gulpT<110) return; gulpT=tn; // restarting the CSS bounce forces a layout; at most ~9 a second st.pot.classList.remove('gulp'); void st.pot.offsetWidth; st.pot.classList.add('gulp');
   if(st.score){ st.score.classList.remove('tick'); void st.score.offsetWidth; st.score.classList.add('tick'); } }
 
 /** The main event. Score pops at (x,y), then flies to the jar as glints. */
@@ -122,7 +132,7 @@ F.score=(x,y,points,opt={})=>new Promise(res=>{
       S&&S.coinFly&&i%3===0&&setTimeout(()=>S.coinFly(),i*38);
       add(Glint(x,y,px,py,i*38,rnd(620,820),()=>{
         st.shown=Math.min(st.value,st.shown+per); if(i===n-1) st.shown=st.value;
-        S&&S.coinLand&&S.coinLand(landed); landed++;
+        { const tn=performance.now(); if(S&&S.coinLand&&tn-(F._clT||0)>65){ F._clT=tn; S.coinLand(landed); } } landed++; // one coin sound per 65 ms, not one per glint
         burst(px,py-6,4,'rgba(255,220,120,A)',180,4); potGulp(); render();
         if(i===n-1) res();
       },opt.tint?PAL[opt.tint]:null));

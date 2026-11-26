@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Xmas Lights</title>
+<title>Xmas Lights City</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito:wght@500;700;800&display=swap">
@@ -227,7 +227,7 @@ body.glass #hint{color:#eef2f7;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:
 
 /* ---------- reward backdrop: night fireworks burst ------------------- */
 .nl-sunburst{ position:absolute; inset:0; overflow:hidden; background:radial-gradient(circle at 50% 36%,#5a3ad8 0%,#2a1872 40%,#120a34 80%); }
-.nl-sunburst::before{ content:''; position:absolute; left:50%; top:36%; width:260%; aspect-ratio:1; transform:translate(-50%,-50%); background:repeating-conic-gradient(rgba(190,170,255,.12) 0 8deg,transparent 8deg 18deg); animation:nl-spin 40s linear infinite;
+.nl-sunburst::before{ content:''; position:absolute; left:50%; top:36%; width:260%; aspect-ratio:1; transform:translate(-50%,-50%); background:repeating-conic-gradient(rgba(190,170,255,.12) 0 8deg,transparent 8deg 18deg); animation:nl-spin 40s linear infinite; will-change:transform;
   -webkit-mask:radial-gradient(circle,#000 10%,transparent 55%); mask:radial-gradient(circle,#000 10%,transparent 55%); }
 .nl-sunburst::after{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 36%,rgba(255,210,90,.35),transparent 35%); }
 
@@ -478,7 +478,7 @@ body #jHint .gt span{ font:600 18px/1.2 var(--nl-ui,sans-serif); color:#fff6e8; 
 .nl-welcome.in-host{ position:absolute; padding:36px 10px 12px; }
 .nl-welcome.out{ animation:nl-fade-out .4s ease-in both; }
 .nl-welcome.out .nl-welcome-card{ animation:nl-card-out .4s ease-in both; }
-.nl-welcome-rays{ position:absolute; left:50%; top:45%; width:240%; aspect-ratio:1; transform:translate(-50%,-50%); background:repeating-conic-gradient(rgba(255,220,140,.10) 0 8deg,transparent 8deg 18deg); animation:nl-spin 40s linear infinite;
+.nl-welcome-rays{ position:absolute; left:50%; top:45%; width:240%; aspect-ratio:1; transform:translate(-50%,-50%); background:repeating-conic-gradient(rgba(255,220,140,.10) 0 8deg,transparent 8deg 18deg); animation:nl-spin 40s linear infinite; will-change:transform;
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 50%); mask:radial-gradient(circle,#000 8%,transparent 50%); pointer-events:none; }
 .nl-welcome-card{ width:min(360px,100%); padding:46px 16px 18px; animation:nl-card-in .5s cubic-bezier(.2,1.4,.4,1) both; }
 .nl-welcome-card .nl-ribbon span{ font-size:28px; padding:7px 30px 11px; }
@@ -527,7 +527,7 @@ body #jHint .gt span{ font:600 18px/1.2 var(--nl-ui,sans-serif); color:#fff6e8; 
 
 /* ---- game-page layout for the kit (from the showcase's screen layouts) ---- */
 #jhud.nl-hud{position:fixed;padding:calc(env(safe-area-inset-top,0px) + 10px) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px))}
-#jGoals.nl-goaltray{position:fixed;top:calc(env(safe-area-inset-top,0px) + 64px);flex-direction:row;flex-wrap:wrap;max-width:calc(100% - 24px)}
+#jGoals.nl-goaltray{position:fixed;top:calc(env(safe-area-inset-top,0px) + 72px);flex-direction:row;flex-wrap:wrap;max-width:calc(100% - 24px)}
 #jGoals:empty{visibility:hidden}
 #jLevelTag{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
 .hud-low{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:20;display:flex;gap:10px}
@@ -572,6 +572,7 @@ button.nl-pill-btn{border:0;cursor:pointer}
 .win-line{margin-top:10px;text-align:center;font-size:19px}
 .win-btns{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);display:flex;justify-content:center;align-items:center;gap:14px;z-index:6}
 .win-btns .nl-round{width:56px;height:56px}
+.nl-starhint{margin:-6px 0 14px;font:600 15px var(--nl-ui,sans-serif);color:#e9e2ff}.nl-starhint .st{color:#ffd23f;letter-spacing:1px;margin-right:4px}
 @media (max-height:780px){.win-ui{padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:110px}.win-big{font-size:50px}.win-ui .nl-stars{margin-top:10px;transform:scale(.8);margin-bottom:-14px}.win-dance{height:152px}.win-card{padding:14px 18px 12px}.win-total .nl-num{font-size:28px}.win-line{font-size:17px;margin-top:6px}.win-btns{bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}}
 #sMap{background:#7a2a1c center/cover no-repeat}
 #mapList{position:relative;min-height:100%}
@@ -806,7 +807,10 @@ button.nl-pill-btn{border:0;cursor:pointer}
   </div>
 </div>
 
-<script src="levels/journey-levels-xl.js"></script>
+<link rel="stylesheet" href="city/city.css">
+<script src="city/three.min.js"></script>
+<script src="city/city-map.js"></script>
+<script src="levels/journey-levels-city.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -2454,13 +2458,12 @@ function jStars(g){const s=g.J.score;return 1+(s>=g.J.thr[0]?1:0)+(s>=g.J.thr[1]
 function jPowered(g){const P=g.J.plug;const seen=new Set([P]);const q=[P];while(q.length){const v=q.pop();for(const w of g.adj[v])if(!seen.has(w)){seen.add(w);q.push(w)}}return seen}
 function jTouches(t,gf){const g=G;const A=g.bulbs[t.a],B=g.bulbs[t.b],C=g.bulbs[t.c];if(inTri(gf.x,gf.y,A,B,C))return true;const r=.045*U;return distSegSq(gf.x,gf.y,A,B)<r||distSegSq(gf.x,gf.y,B,C)<r||distSegSq(gf.x,gf.y,C,A)<r}
 
-// commit for journey: lighting cords are free, chains raise the multiplier
+// commit for journey (city build): every cord costs one, chains raise the multiplier
 function jCommit(a,b,tri,e){
   const g=G,J=g.J;
   if(!SIM){e.rope.kick(-9);g.bulbs[a].bump=1;g.bulbs[b].bump=1;SFX.click();haptic(8);
     for(let i=0;i<10;i++)particles.push({x:g.bulbs[b].x+rnd(-10,10),y:g.bulbs[b].y+BR,vx:rnd(-60,60),vy:rnd(-90,-20),life:0,max:rnd(.4,.8),sz:rnd(1.5,3),c:[235,242,255],snow:1})}
-  if(!tri.length){J.used++;J.chain=0}
-  else{J.chain++;if(!SIM){const A=g.bulbs[a],B=g.bulbs[b];floats.push({x:(A.x+B.x)/2,y:(A.y+B.y)/2-26,text:'Free cord!',t0:now()+250,c:[190,255,200],small:1})}}
+  J.used++;if(!tri.length){J.chain=0}else{J.chain++}
   const mult=1+.5*Math.max(0,J.chain-1);
   let lit=0;
   tri.forEach((c,i)=>{const t={a,b,c,owner:'you',t0:now()+i*140,dead:0,dark:false,mult};g.tris.push(t);if(J.plug!=null&&!jPowered(g).has(a)){t.dark=true}else{jActivate(t,i*140);lit++}});
@@ -2552,9 +2555,9 @@ function jLandSnowball(s){
   const d={x:s.x,y:s.y,r:s.r,ttl:Infinity,born:now(),melt:0,kind:'snowball',name:'A snowball',rot:0,wob:0};g.drifts.push(d);g.M.drifts=g.drifts;
   if(!SIM){if(window.NLSfx&&NLSfx.splat)NLSfx.splat(clamp((s.x/W)*2-1,-1,1));else{SFX.thud();SFX.crunch(3)}haptic(25);for(let k=0;k<30;k++){const an=Math.random()*6.28,sp=rnd(60,260);particles.push({x:s.x,y:s.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-60,life:0,max:rnd(.4,.9),sz:rnd(2,4.5),c:[240,246,255],snow:1})}}
 }
-function jStuck(g){const J=g.J;if(!anyMove(g.M))return true;if(J.used>=J.budget&&!jLightingMoves(g).length)return true;return false}
+function jStuck(g){const J=g.J;if(!anyMove(g.M))return true;if(J.used>=J.budget)return true;return false}
 function jLightingMoves(g){return allMoves(g.M).filter(([a,b])=>trisFor(g.M,a,b).length>0)}
-function jBudgetWhy(a,b){if(!isJ())return null;const J=G.J;if(J.used<J.budget)return null;return trisFor(G.M,a,b).length?null:'No cords left. Only a cord that lights a triangle is free'}
+function jBudgetWhy(a,b){if(!isJ())return null;const J=G.J;if(J.used<J.budget)return null;return 'No cords left.'}
 async function jWaitFx(g){while(G===g&&now()<g.J.fxUntil)await wait(60)}
 async function jAfterMove(scored){
   const g=G,J=g.J;updateHUD();
@@ -2573,7 +2576,7 @@ function jTurn(){
   while(tut&&J.tut<tut.length){const [a,b]=tut[J.tut];if(g.adj[a].has(b)){J.tut++;continue}if(!legal(g.M,a,b)){J.ghost={a,b,t0:now(),tut:1};break}J.tut++}
   const left=J.budget-J.used;
   J.urgent=false;const tele=J.snowQ.some(s=>s.warned&&!s.done)?'heads-snow':(J.biker&&J.biker.warned&&!J.biker.done)?'heads-scissors':'';
-  if(J.ghost)hint('');else if(left<=0){const lm=jLightingMoves(G).length;J.urgent=!!lm;hint(lm?'Last chance: only a cord that lights a triangle is free':'')}else if(tele)hint(tele);else if(left===1)hint('Last cord. Make it count.');else hint('');
+  if(J.ghost)hint('');else if(left<=0){J.urgent=false;hint('')}else if(tele)hint(tele);else if(left===1)hint('Last cord. Make it count.');else hint('');
 }
 // a good next cord, using the real rules on a silent copy of the board
 function jClone(g){
@@ -2584,13 +2587,13 @@ function jClone(g){
 }
 function jSim(g,a,b){const save=G,s0=SIM;const c=jClone(g);G=c;SIM=true;try{commit(a,b,'you');jScripted(c)}finally{G=save;SIM=s0}return c}
 function jProgress(g){return jGoalState(g).reduce((s,q)=>s+(q.have/q.need),0)}
-function jMovesFor(g){const J=g.J;const ms=allMoves(g.M);if(J.used<J.budget)return ms;return ms.filter(([a,b])=>trisFor(g.M,a,b).length>0)}
+function jMovesFor(g){const J=g.J;const ms=allMoves(g.M);if(J.used<J.budget)return ms;return []}
 function jHint(){const g=G;const p=jPlanNext(g);if(p)return p;return jHintGreedy()}
 const edgeSetKey=g=>g.edges.map(e=>ekey(e.a,e.b)).sort((x,y)=>x-y).join(',');
 // next cord of a line that still wins from here: the stored solution if we're on it, else a short search
 function jPlanNext(g){const J=g.J;if(!J)return null;const k=edgeSetKey(g);
   if(J.plan&&J.planKey===k&&J.plan.length){const [a,b]=J.plan[0];if(!legal(g.M,a,b))return [a,b]}
-  const ok=line=>{let c=g;for(const [a,b] of line){if(c.adj[a].has(b))continue;if(legal(c.M,a,b))return false;if(c.J.used>=c.J.budget&&!trisFor(c.M,a,b).length)return false;c=jSim(c,a,b)}return jDone(c)};
+  const ok=line=>{let c=g;for(const [a,b] of line){if(c.adj[a].has(b))continue;if(legal(c.M,a,b))return false;if(c.J.used>=c.J.budget)return false;c=jSim(c,a,b)}return jDone(c)};
   const rest=(g.L.parLine||[]).filter(([a,b])=>!g.adj[a].has(b));
   let plan=null;if(J.plan&&J.plan.length>1){const r=J.plan.filter(([a,b])=>!g.adj[a].has(b));if(r.length&&ok(r))plan=r}
   if(!plan&&rest.length&&ok(rest))plan=rest;
@@ -2602,12 +2605,11 @@ function jPlanNext(g){const J=g.J;if(!J)return null;const k=edgeSetKey(g);
 function jSearch(g0,maxNodes){const memo=new Map();let nodes=0,best=null;const left=g0.J.budget-g0.J.used;
   function dfs(c,line,lim){if(++nodes>maxNodes)throw 'budget';if(jDone(c)){best=line;return true}
     const k=edgeSetKey(c);const seen=memo.get(k);if(seen!=null&&seen>=lim-c.J.used)return false;memo.set(k,lim-c.J.used);
-    const ms=allMoves(c.M);const lightF=[],rest=[];for(const m of ms)(trisFor(c.M,m[0],m[1]).length?lightF:rest).push(m);
-    for(const [a,b] of lightF){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
     if(c.J.used>=lim)return false;
-    for(const [a,b] of rest){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
+    const ms=allMoves(c.M);const lightF=[],rest=[];for(const m of ms)(trisFor(c.M,m[0],m[1]).length?lightF:rest).push(m);
+    for(const [a,b] of lightF.concat(rest)){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
     return false}
-  try{for(let l=0;l<=left;l++){memo.clear();if(dfs(g0,[],g0.J.used+l))return best}}catch(e){}
+  try{for(let l=1;l<=left;l++){memo.clear();if(dfs(g0,[],g0.J.used+l))return best}}catch(e){}
   return null}
 function jHintGreedy(){
   const g=G;const moves=jMovesFor(g);if(!moves.length)return null;const p0=jProgress(g);
@@ -2623,10 +2625,9 @@ function jSolve(i,limit=8,maxNodes=200000){
   const key=c=>c.edges.map(e=>ekey(e.a,e.b)).sort((x,y)=>x-y).join(',');
   function dfs(c,line,lim){if(++nodes>maxNodes)throw 'budget';if(jDone(c)){bestLine=line;return true}
     const k=key(c);const seen=memo.get(k);if(seen!=null&&seen>=lim-c.J.used)return false;memo.set(k,lim-c.J.used);
-    const ms=allMoves(c.M);const lightF=[],rest=[];for(const m of ms)(trisFor(c.M,m[0],m[1]).length?lightF:rest).push(m);
-    for(const [a,b] of lightF){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
     if(c.J.used>=lim)return false;
-    for(const [a,b] of rest){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
+    const ms=allMoves(c.M);const lightF=[],rest=[];for(const m of ms)(trisFor(c.M,m[0],m[1]).length?lightF:rest).push(m);
+    for(const [a,b] of lightF.concat(rest)){if(dfs(jSim(c,a,b),line.concat([[a,b]]),lim))return true}
     return false}
   for(let lim=0;lim<=limit;lim++){memo.clear();try{if(dfs(jClone(g0),[],lim))return {par:lim,line:bestLine,nodes}}catch(e){return {error:e,lim,nodes}}}
   return {par:null,nodes};
@@ -2958,6 +2959,7 @@ async function jWinKit(){
   await wait(left>0?900:450);if(g!==G)return;
   const st=jStars(g);const id=g.L.id||('lv'+g.idx);const prev=jprog[id]||0;
   if(st>prev){jprog[id]=st;store.set('jprog',jprog)}
+  lastWin={i:g.idx,wasNew:prev===0};
   let earned=0;if(st===3&&prev<3){cocoa++;earned=1;store.set('cocoa',cocoa)}
   jShowResult(true,st,earned);
 }
@@ -3013,8 +3015,9 @@ function jHUD(){const g=G,J=g.J;if(!J)return;
   if($('jGoals').innerHTML!==html)$('jGoals').innerHTML=html;
   $('jLevelTag').innerHTML=`Level<b>${g.idx+1}</b>`}
 function jKitInit(g){if(window.NLArt){$('jSpool').src=KA('spool');$('jJarImg').src=KA('jar')}if(!hasFX())return;const th=g.J.thr;const s1=Math.round(th[0]*.55);
-  NLFX.init({pot:$('jJar'),score:$('jScore'),meter:$('jMeter'),thresholds:[s1,th[0],th[1]]});NLFX.reset(0);
-  const m=$('jMeter');[...m.querySelectorAll('[data-star]')].forEach((s,i)=>{s.style.left=(100*[s1,th[0],th[1]][i]/th[1])+'%';s.classList.remove('on')});
+  const SPOS=[.28,.6,1]; // stars evenly spaced on every level; the fill bends so each star still lights at its score
+  NLFX.init({pot:$('jJar'),score:$('jScore'),meter:$('jMeter'),thresholds:[s1,th[0],th[1]],positions:SPOS});NLFX.reset(0);
+  const m=$('jMeter');[...m.querySelectorAll('[data-star]')].forEach((s,i)=>{s.style.left=(100*SPOS[i])+'%';s.classList.remove('on')});
   $('jJar').style.setProperty('--fill',0);
   if(!m._obs){m._obs=new MutationObserver(()=>$('jJar').style.setProperty('--fill',m.style.getPropertyValue('--fill')||0));m._obs.observe(m,{attributes:true,attributeFilter:['style']})}}
 // in-play guide card: every status line becomes a big title + what to do next
@@ -3026,9 +3029,8 @@ const GUIDES={
  'That old bulb is full':['warn','!','Bulb is full','Its number is how many cords it takes. Use another bulb.'],
  'The star lights up last':['','&#9733;','Star comes last','Finish the other goals first, then connect the star.'],
  'That bulb is gone':['warn','!','Burnt out','That bulb is gone. Use the others.'],
- 'No cords left. Only a cord that lights a triangle is free':['warn','0','Out of cords!','A cord that closes a triangle is still free. Follow the hand.',1],
- 'Last chance: only a cord that lights a triangle is free':['warn','0','Out of cords!','A cord that closes a triangle is still free. Follow the hand.',1],
- 'Last cord. Make it count.':['','1','Last cord!','Make it count. Cords that close a triangle are always free.',1],
+ 'No cords left.':['warn','0','Out of cords!','Every cord costs one. Grab a Hot Cocoa for 3 more.',1],
+ 'Last cord. Make it count.':['','1','Last cord!','Make it count. Share sides between triangles to save cords.',1],
  'Snowfall!':['warn','&#10052;','Snowfall!','Unlit cords under the snowball snap. Melt it with a lit triangle.'],
  'Snip snip!':['warn','&#9986;','Scissors!','They cut unlit cords on the dotted line. Lit cords are safe.'],
  'heads-snow':['','&#10052;','Heads up: snow!','After your next cord, a snowball lands on the marked spot.',1],
@@ -3055,7 +3057,34 @@ function addMascot(c,draw){const d=Math.min(2,devicePixelRatio||1);const w=c.cli
 let mapCh=-1;
 function chapterList(ch){const out=[];LEVELS.forEach((L,i)=>{if(chapterOf(L)===ch)out.push(i)});return out}
 function currentLevel(){let cur=-1;LEVELS.forEach((L,i)=>{const s=jprog[L.id||('lv'+i)]||0;if(cur<0&&jUnlocked(i)&&!s)cur=i});return cur<0?LEVELS.length-1:cur}
+let lastWin=null;
+function cityOK(){return window.XLCity&&XLCity.ok&&!/[?&]oldmap/.test(location.search)}
+function renderCity(){
+  const cur=currentLevel();const total=LEVELS.reduce((s,L,i)=>s+(jprog[L.id||('lv'+i)]||0),0);
+  const sm=$('sMap');sm.classList.add('citymode');sm.style.backgroundImage='none';
+  const ml=$('mapList');
+  if(!ml.querySelector('.xc')){ml.innerHTML=`<div class="xc"></div>
+    <div class="xc-ui xc-top"><button class="nl-round cream" data-ico="home" id="mBack" aria-label="Home"></button><span class="grow"></span><span class="nl-pill" id="mStars"></span><span class="nl-pill" id="mCocoa"></span></div>
+    <div class="xc-title"><b>Light up the city!</b><span class="xc-meter"><i id="mMeter"></i></span><small id="mPct"></small></div>
+    <div class="xc-ui xc-bot"><button class="nl-btn shine" id="mPlay" style="min-width:200px"></button></div>`;fillIcons(ml)}
+  $('mStars').innerHTML=`<img src="${KA('star','lit')}" alt="">${total} / ${LEVELS.length*3}`;$('mCocoa').innerHTML=`<img src="${KA('cocoa')}" alt="Hot cocoa">${cocoa}`;
+  $('mPlay').textContent='Play '+(cur+1);
+  $('mBack').onclick=()=>{sfx('tap');XLCity.hide();goHome()};
+  $('mPlay').onclick=()=>{initAudio();sfx('button');XLCity.hide();openJIntro(currentLevel())};
+  const w=lastWin;lastWin=null;
+  const setPct=p=>{$('mMeter').style.width=p+'%';$('mPct').textContent=p+'% OF THE CITY LIT'};
+  const r=XLCity.show(ml.querySelector('.xc'),{
+    stars:i=>jprog[LEVELS[i]?(LEVELS[i].id||('lv'+i)):'']||0,unlocked:i=>i<LEVELS.length&&jUnlocked(i),current:cur,
+    chapters:(window.NL_CHAPTERS||CHAPTERS),justWon:w?w.i:null,wasNew:w?w.wasNew:false,
+    onPick:i=>{if(i>=LEVELS.length)return;if(!jUnlocked(i)){sfx('tap');return}initAudio();sfx('button');XLCity.hide();openJIntro(i)},
+    drawMarker:c=>{const ci=cur%6;addMascot(c,(x,ww,hh,t)=>NLArt.drawMascot(x,ww/2,hh/2+4,56,ci,'happy',t))},
+    sfx:(n,k)=>{try{initAudio();if(n==='lightOn'){SFX.zap();SFX.bell(SCALE[Math.min(SCALE.length-1,2+k)],.7);SFX.crackle(.6);haptic(12)}
+      else if(n==='districtLit'){SFX.surge(1);SFX.jingle(1);sfx('plugCascade',5);SFX.bell(1046.5,1);SFX.bell(1567.98,.7,.12);haptic([20,40,20])}}catch(e){}},
+    onLit:()=>setPct(XLCity.pct())});
+  setPct(w&&w.wasNew?Math.max(0,r.pct-1):r.pct);
+}
 function renderMap(){
+  if(cityOK())return renderCity();
   const cur=currentLevel();if(mapCh<0)mapCh=chapterOf(LEVELS[cur]);const nCh=Math.max(...LEVELS.map(chapterOf))+1;mapCh=clamp(mapCh,0,nCh-1);
   const ids=chapterList(mapCh);const C=CHAPTERS[mapCh]||{name:'Chapter '+(mapCh+1)};const NC=(window.NL_CHAPTERS||[])[mapCh];
   const tiles=ids.map(i=>{const L=LEVELS[i];const s=jprog[L.id||('lv'+i)]||0;const open=jUnlocked(i);const cls=[!open?'locked':'',i===cur?'current':'',L.tier==='hard'?'hard':'',L.tier==='boss'?'boss':''].join(' ');
@@ -3092,6 +3121,7 @@ function openJIntro(i){
     ${g.L.quip?`<div class="nl-quip">${esc(g.L.quip)}</div>`:''}
     <div class="nl-well"><div class="nl-caps" style="margin-bottom:8px">Light up</div><div class="nl-goals nl-stagger">${kitGoals(g,false)}</div></div>
     <div class="nl-meta"><span class="nl-pill"><img src="${KA('spool')}" alt="">${g.J.budget} cord${g.J.budget===1?'':'s'}</span></div>
+    ${(()=>{const p3=g.L.stars?g.L.stars[0]:g.L.par;const n=p3==null?0:g.J.budget-p3;return n>0?`<div class="nl-starhint"><span class="st">&#9733;&#9733;&#9733;</span> Finish with ${n} cord${n===1?'':'s'} to spare</div>`:''})()}
     <button class="nl-btn shine wide" id="jiGo">Play</button>
     <button class="nl-round cream nl-close" data-ico="close" id="jiBack" aria-label="Back to levels"></button></div></div>`;
   fillIcons($('jiCard'));
@@ -3114,7 +3144,7 @@ function jShowResult(win,stars,earned){
     fillIcons(card);show('sJResult');sfx('popIn');
     addMascot(card.querySelector('.win-dance'),(x,w,h,t)=>{for(let k=0;k<5;k++)NLArt.drawMascot(x,w/2+(k-2)*Math.min(66,w/5.5),h-(h>170?50:35),40,(g.idx+k)%6,'happy',t+k*.3)});
     setTimeout(()=>{if(!card.isConnected)return;NLFX.stars($('jrStars'),stars);NLFX.countUp?NLFX.countUp($('jrScore'),0,J.score,1400):($('jrScore').textContent=J.score.toLocaleString('en-US'))},450);
-    $('jrNext').onclick=()=>{sfx('button');g.idx+1<LEVELS.length?openJIntro(g.idx+1):openMap()};
+    $('jrNext').onclick=()=>{sfx('button');if(cityOK()&&lastWin&&lastWin.wasNew)return openMap();lastWin=null;g.idx+1<LEVELS.length?openJIntro(g.idx+1):openMap()};
   }else{
     const st=jGoalState(g);const left=st.filter(s=>s.have<s.need);const n=left.reduce((s,q)=>s+(q.type==='score'?1:q.need-q.have),0);
     const what=left.length===1?({gifts:n===1?'present':'presents',nose:'nose',melt:n===1?'snowball':'snowballs',thaw:n===1?'bulb':'bulbs',star:'star',tris:n===1?'triangle':'triangles',match:n===1?'match':'matches',score:'points'})[left[0].type]:'goals';
