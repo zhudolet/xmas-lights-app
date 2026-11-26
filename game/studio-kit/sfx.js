@@ -209,6 +209,15 @@ X.giftShake=(n=1)=>{ if(!ok())return; const t=now(); for(let i=0;i<4+n*3;i++) no
 X.giftBurst=()=>{ if(!ok())return; const t=now(); const s=AC.createBufferSource(); s.buffer=noiseBuf(); const f=AC.createBiquadFilter(); f.type='bandpass'; f.Q.value=1.5; f.frequency.setValueAtTime(1200,t); f.frequency.exponentialRampToValueAtTime(5000,t+.18);
   const e=AC.createGain(); env(e,t,.01,.25,.2); s.connect(f); f.connect(e); send(e,.2); s.start(t,Math.random()*.5); s.stop(t+.3);
   thump(t+.16,.4,200,60,.22); sparkleRun(t+.2,12,.11,88,.035); jingle(t+.2,.15,0,8); };
+/** v4.4: the lid lands in the snow next to the box: soft cardboard bump + a puff of snow */
+X.giftLidLand=()=>{ if(!ok())return; const t=now(); thump(t,.22,150,70,.14); noiseBurst(t,.09,.07,0,.35,.15,900); noiseBurst(t+.03,.12,.04,3000,.35,.2); jingle(t+.01,.04,.35,2); };
+/** v4.4: the bulb inside switches on: a soft filament click, a warm hum swelling up, and a bright glass "ting" */
+X.giftBulbOn=()=>{ if(!ok())return; const t=now();
+  noiseBurst(t,.008,.12,2500,0,.1);
+  const o=AC.createOscillator(), o2=AC.createOscillator(), e=AC.createGain(), lp=AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(300,t); lp.frequency.exponentialRampToValueAtTime(2400,t+.35);
+  o.type='sawtooth'; o.frequency.value=110; o2.type='sine'; o2.frequency.value=220; e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(.05,t+.25); e.gain.exponentialRampToValueAtTime(0.0001,t+1.1);
+  o.connect(lp); o2.connect(lp); lp.connect(e); send(e,.35,0); o.start(t); o2.start(t); o.stop(t+1.15); o2.stop(t+1.15);
+  bell(midi(91),t+.06,.18,1.6,0,.6); bell(midi(98),t+.14,.1,1.4,.15,.6); sparkleRun(t+.12,6,.05,96,.03); };
 /** each reward card pops in */
 X.rewardReveal=(n=2)=>{ if(!ok())return; const t=now(); for(let i=0;i<n;i++){ bell(ladder(4+i*2,84),t+i*.18,.16,1,(i-(n-1)/2)*.4,.6); noiseBurst(t+i*.18,.03,.08,4000,0,.2); } };
 /** Claim: coins whoosh away and a happy chord */

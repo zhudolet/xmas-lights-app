@@ -245,8 +245,11 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
   let W=0,H=0; const dpr=Math.min(2,devicePixelRatio||1);
   const fit=()=>{ W=stage.clientWidth; H=stage.clientHeight; cv.width=W*dpr; cv.height=H*dpr; }; fit();
   const rnd=i=>{ const v=Math.sin(i*127.1+311.7)*43758.5453; return v-Math.floor(v); };
-  const t0=performance.now(); let shakeT=0, raf=0;
-  S&&S.santaHoHo&&setTimeout(()=>S.santaHoHo(),450);
+  const t0=performance.now(); let shakeT=0, raf=0, lidSnd=0, bulbSnd=0, hoHeard=false;
+  const snd=()=>S||opt.sfx||window.NLSfx||null;
+  const unlock=()=>{ try{ opt.onTap&&opt.onTap(); }catch(e){} try{ const c=snd()&&snd().ctx&&snd().ctx(); if(c&&c.state!=='running'&&c.resume) c.resume(); }catch(e){} };
+  const live=()=>{ try{ const c=snd()&&snd().ctx&&snd().ctx(); return !!c&&c.state==='running'; }catch(e){ return false; } };
+  setTimeout(()=>{ if(live()){ hoHeard=true; snd().santaHoHo&&snd().santaHoHo(); } },450);
   const ground=()=>H*.8;
   const santaS=()=>Math.min(W*.28,H*.36,108), santaX=()=>W*.25;
   const giftS=()=>Math.min(W*.32,H*.4,120), giftX=()=>W*.66, giftY=()=>ground()-giftS()*.42;
@@ -285,20 +288,15 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
       if(tapN===0&&t>1.4){ const b=Math.abs(Math.sin(t*4))*8; cx.fillStyle='#fff'; cx.strokeStyle='#2a1640'; cx.lineWidth=3; cx.lineJoin='round';
         const ax=px, ay=py-gs*.62-b; cx.beginPath(); cx.moveTo(ax,ay); cx.lineTo(ax-11,ay-14); cx.lineTo(ax-4,ay-14); cx.lineTo(ax-4,ay-26); cx.lineTo(ax+4,ay-26); cx.lineTo(ax+4,ay-14); cx.lineTo(ax+11,ay-14); cx.closePath(); cx.stroke(); cx.fill(); }
     } else {
-      const k=Math.min(1,(now-openT)/1100);
-      if(k<1) A.drawGift(cx,px,py,gs,'unwrap',t,{k,ribbonCi:opt.ribbon??1});
-      else { const e=Math.min(1,(now-openT-1100)/300);
-        A.light(cx,px,py-gs*.3,gs*(1.1+.1*Math.sin(t*3)),'#ffd76a',.55*e);
-        cx.save(); cx.globalAlpha=e; A.drawGift(cx,px,py,gs,'open',t,{ribbonCi:opt.ribbon??1}); cx.restore();
-        // soft golden glow with gentle, even rays that fade out (v4.3.1)
-        cx.save(); cx.globalCompositeOperation='lighter'; cx.translate(px,py-gs*.38);
-        const len=gs*1.15, rg=cx.createRadialGradient(0,0,0,0,0,len); rg.addColorStop(0,'rgba(255,236,160,.75)'); rg.addColorStop(.35,'rgba(255,214,100,.35)'); rg.addColorStop(1,'rgba(255,200,80,0)');
-        cx.globalAlpha=e*(.8+.2*Math.sin(t*2.4)); cx.fillStyle=rg; cx.rotate(Math.sin(t*.7)*.06); cx.beginPath();
-        for(let i=0;i<7;i++){ const a=-Math.PI/2+(i-3)*.3, w=.07; cx.moveTo(0,0); cx.arc(0,0,len,a-w,a+w); cx.closePath(); }
-        cx.fill(); cx.restore();
-        A.light(cx,px,py-gs*.2,gs*.5,'#ffffff',.25*e);
-        for(let i=0;i<8;i++){ const a=t*.9+i*.785, d=gs*.5; cx.fillStyle=i%2?'#fff6c0':'#ffd24a'; cx.save(); cx.translate(px+Math.cos(a)*d,py-gs*.05+Math.sin(a)*d*.5); cx.rotate(t*2+i);
-          cx.beginPath(); for(let j=0;j<8;j++){ const r=j%2?1.5:5, aa=j*.785; cx.lineTo(Math.cos(aa)*r,Math.sin(aa)*r);} cx.fill(); cx.restore(); } }
+      // v4.4: the box really opens, the lid lands beside it and a game bulb rises out and lights up
+      const k=(now-openT)/1100;
+      A.drawGiftOpening(cx,px,py,gs,k,t,{ribbonCi:opt.ribbon??1,bulbCi:1});
+      if(!lidSnd&&k>.62){ lidSnd=1; snd()&&snd().giftLidLand&&snd().giftLidLand(); }
+      if(!bulbSnd&&k>.38){ bulbSnd=1; snd()&&snd().giftBulbOn&&snd().giftBulbOn(); }
+      if(k>1){ const e=Math.min(1,(k-1)/.3);
+        for(let i=0;i<8;i++){ const a=t*.9+i*.785, d=gs*.62; cx.globalAlpha=e; cx.fillStyle=i%2?'#fff6c0':'#ffd24a'; cx.save(); cx.translate(px+Math.cos(a)*d,py-gs*.45+Math.sin(a)*d*.45); cx.rotate(t*2+i);
+          cx.beginPath(); for(let j=0;j<8;j++){ const r=j%2?1.5:5, aa=j*.785; cx.lineTo(Math.cos(aa)*r,Math.sin(aa)*r);} cx.fill(); cx.restore(); }
+        cx.globalAlpha=1; }
     }
     // a few soft snowflakes drifting over everything
     for(let i=0;i<14;i++){ const sp=10+rnd(i+7)*14, yy=((rnd(i+3)*H+t*sp)%(H+10))-5, xx=rnd(i)*W+Math.sin(t*.8+i)*8;
@@ -307,17 +305,21 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
     raf=requestAnimationFrame(frame); }
   raf=requestAnimationFrame(frame);
   const tap=e=>{ if(state!=='wait') return; e.preventDefault&&e.preventDefault();
-    tapN++; shakeT=performance.now(); S&&S.giftShake&&S.giftShake(tapN);
+    unlock();   // host wakes the game audio (and resumes it) on every tap
+    tapN++; shakeT=performance.now(); snd()&&snd().giftShake&&snd().giftShake(tapN);
+    if(!hoHeard){ hoHeard=true; setTimeout(()=>snd()&&snd().santaHoHo&&snd().santaHoHo(),260); }
     pips.forEach((p,i)=>p.classList.toggle('on',i<tapN));
     if(tapN<taps){ tapTxt.textContent=tapWords[Math.min(tapWords.length-1,tapN)]; tapTxt.parentNode.classList.remove('bump'); void tapTxt.offsetWidth; tapTxt.parentNode.classList.add('bump'); return; }
-    state='open'; openT=performance.now(); root.classList.add('opened'); S&&S.giftBurst&&S.giftBurst();
+    state='open'; openT=performance.now(); root.classList.add('opened'); snd()&&snd().giftBurst&&snd().giftBurst();
     const r=cv.getBoundingClientRect();
     if(F.confetti&&!inHost) setTimeout(()=>F.confetti(r.left+giftX(),r.top+giftY(),60),260);
-    setTimeout(()=>{ root.classList.add('reveal'); S&&S.rewardReveal&&S.rewardReveal(rewards.length); },650);
+    setTimeout(()=>{ root.classList.add('reveal'); snd()&&snd().rewardReveal&&snd().rewardReveal(rewards.length); },650);
     setTimeout(()=>{ state='done'; root.classList.add('claimable'); claim.disabled=false; },650+rewards.length*180+350); };
   stage.addEventListener('pointerdown',tap);
+  // v4.4.1: phones only allow audio to start on touchend/click (a touch pointerdown doesn't count), so unlock there too
+  ['pointerup','touchend','click'].forEach(ev=>root.addEventListener(ev,unlock,{passive:true}));
   const claim=root.querySelector('.nl-welcome-claim');
-  claim.onclick=()=>{ if(state!=='done') return; state='gone'; S&&S.claim&&S.claim();
+  claim.onclick=()=>{ if(state!=='done') return; state='gone'; snd()&&snd().claim&&snd().claim();
     root.querySelectorAll('.nl-welcome-rw').forEach(w=>w.classList.add('fly'));
     opt.onClaim&&opt.onClaim(rewards);
     setTimeout(()=>root.classList.add('out'),250); setTimeout(()=>{ cancelAnimationFrame(raf); removeEventListener('resize',fit); root.remove(); done(rewards); },700); };
