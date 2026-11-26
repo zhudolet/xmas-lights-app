@@ -444,7 +444,7 @@ A.drawFrozen = (ctx,x,y,size,ci,state='frozen',t=0,k=0)=>{
 };
 
 A.drawGift = (ctx,x,y,size,state='closed',t=0,opt={})=>{
-  const ribbon = opt.ribbonCi!=null ? PAL[opt.ribbonCi] : '#ffc21a';
+  const ribbon = opt.ribbon || (opt.ribbonCi!=null ? PAL[opt.ribbonCi] : '#ffc21a');
   const box = opt.box || (opt.ribbonCi!=null ? (opt.ribbonCi===0||opt.ribbonCi===5?'#2f86ff':'#f0283c') : '#f0283c');
   const kb = 'g'+box+ribbon;
   const eB=img(kb+'b',()=>S.giftBox(box,ribbon)), eL=img(kb+'l',()=>S.giftLid(box,ribbon));
@@ -985,6 +985,68 @@ S.strand=(n=7,w=320)=>{
 };
 
 
+
+/* ===============================================================
+   v4.4 WELCOME GIFT OPENING (daily gift card only; board presents keep drawGift 'unwrap').
+   The lid pops off, tumbles and lands leaning on the box, the box is drawn OPEN
+   (dark inside, glowing rim), and one of the game's own bulbs rises out of it, lights
+   up and bobs. No hands, same glossy bulb as on the board.
+   A.drawGiftOpening(ctx,x,y,size,k,t,{ribbonCi, bulbCi})  k = 0..1 opening, >1 = settled
+   =============================================================== */
+A.drawGiftOpening=(ctx,x,y,size,k,t=0,opt={})=>{
+  const ribbon = opt.ribbonCi!=null ? PAL[opt.ribbonCi] : '#ffc21a';
+  const box = opt.ribbonCi!=null ? (opt.ribbonCi===0||opt.ribbonCi===5?'#2f86ff':'#f0283c') : '#f0283c';
+  const kb='g'+box+ribbon, eB=img(kb+'b',()=>S.giftBox(box,ribbon)), eL=img(kb+'l',()=>S.giftLid(box,ribbon));
+  const u=size/76, cl=v=>Math.max(0,Math.min(1,v));
+  const topY=y-18*u, botY=y+32*u, halfW=36*u, backY=topY-11*u, backW=31*u;
+  const pop=cl(k/.12), open=cl((k-.04)/.18);                 // box squashes, lid leaves
+  const squash=k<.12?Math.sin(pop*Math.PI)*.07:0;
+  shadow(ctx,x,y+size*.45,size*1.05);
+  // light pouring out of the opening
+  if(open>0){ addLight(ctx,x,topY-size*.25,size*(1.1+.25*open),'#ffd76a',.9*open);
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=.55*open*(k<1?1:.6+.15*Math.sin(t*2.4)); ctx.translate(x,backY+4*u);
+    const len=size*(1.1+.5*open), rg=ctx.createRadialGradient(0,0,0,0,0,len); rg.addColorStop(0,'rgba(255,240,180,.95)'); rg.addColorStop(.4,'rgba(255,214,100,.35)'); rg.addColorStop(1,'rgba(255,200,80,0)');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.moveTo(-backW,0); ctx.lineTo(backW,0); ctx.lineTo(len*.75,-len); ctx.lineTo(-len*.75,-len); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  ctx.save(); ctx.translate(x,botY); ctx.scale(1+squash,1-squash); ctx.translate(-x,-botY);
+  // the inside of the box: back wall, dark floor, a warm glow from below
+  if(open>0){
+    const ig=ctx.createLinearGradient(0,backY,0,topY); ig.addColorStop(0,dark(box,.5)); ig.addColorStop(1,dark(box,.78));
+    ctx.fillStyle=ig; ctx.beginPath(); ctx.moveTo(x-halfW,topY); ctx.lineTo(x-backW,backY); ctx.lineTo(x+backW,backY); ctx.lineTo(x+halfW,topY); ctx.closePath(); ctx.fill();
+    addLight(ctx,x,topY-3*u,size*.42,'#ffe08a',.85*open);
+    // rim: the top edges of the four walls
+    ctx.lineJoin='round'; ctx.lineCap='round'; ctx.lineWidth=3.2*u; ctx.strokeStyle=light(box,.12);
+    ctx.beginPath(); ctx.moveTo(x-halfW,topY); ctx.lineTo(x-backW,backY); ctx.lineTo(x+backW,backY); ctx.lineTo(x+halfW,topY); ctx.stroke();
+    ctx.lineWidth=1.4*u; ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(x-backW+2*u,backY); ctx.lineTo(x+backW-2*u,backY); ctx.stroke();
+    // ribbon runs over the back wall too
+    ctx.fillStyle=dark(ribbon,.15); ctx.fillRect(x-7*u*.86,backY-1.5*u,14*u*.86,4*u);
+  }
+  // the bulb: a real game bulb, rises out of the box, switches on, then bobs
+  const rise=cl((k-.12)/.5), on=cl((k-.38)/.2), bs=size*.5;
+  if(rise>0){
+    const restY=backY-bs*.95, startY=botY+bs*.2;
+    const by=startY+(restY-startY)*ease.outBack(rise,1.4)+(k>=.6?Math.sin(t*2.6)*bs*.06:0), bx=x+(k>=.6?Math.sin(t*1.3)*bs*.03:0);
+    ctx.save(); ctx.beginPath(); ctx.rect(x-size,y-size*3,size*2,(topY+1.5*u)-(y-size*3)); ctx.clip();
+    if(on>0){ addLight(ctx,bx,by+bs*.25,bs*3.2,PAL[opt.bulbCi??1],.5*on); addLight(ctx,bx,by,bs*1.5,PAL[opt.bulbCi??1],.6*on); }
+    A.drawBulbBody(ctx,bx,by,bs,opt.bulbCi??1,{bright:on,blink:((t+.7)%3.6)<.12});
+    ctx.restore();
+    if(on>0&&on<1){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=(1-on); ctx.fillStyle='#fff8d8';
+      ctx.beginPath(); ctx.arc(bx,by,bs*(.4+on*.9),0,6.2832); ctx.fill(); ctx.restore(); }
+  }
+  // front of the box (same art as the closed present)
+  blit(ctx,eB,x,y,size);
+  if(open<=0) blit(ctx,eL,x,y,size);
+  ctx.restore();
+  // the lid: pops up, spins, falls and lands leaning against the right side of the box
+  if(open>0){
+    const fly=cl((k-.04)/.26), fall=cl((k-.3)/.32);
+    const lx0=x, ly0=y, upX=x+size*.32, upY=y-size*.95, endX=x+size*.34, endY=y+size*.06;
+    let lx,ly,lr;
+    if(fall<=0){ const e=ease.outCubic(fly); lx=lx0+(upX-lx0)*e; ly=ly0+(upY-ly0)*e; lr=.9*e; }
+    else { const e=fall*fall; lx=upX+(endX-upX)*e; ly=upY+(endY-upY)*e; lr=.9+(1.22-.9)*ease.outCubic(fall); }
+    const land=k>.62&&k<.8?Math.sin((k-.62)/.18*Math.PI)*.06:0;
+    blit(ctx,eL,lx,ly,size,lr-land);
+  }
+};
 
 /* ===============================================================
    v4.3 SANTA BULB: Santa is one of the cast, a glossy warm-gold bulb in a red

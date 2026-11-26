@@ -527,7 +527,7 @@ body #jHint .gt span{ font:600 18px/1.2 var(--nl-ui,sans-serif); color:#fff6e8; 
 
 /* ---- game-page layout for the kit (from the showcase's screen layouts) ---- */
 #jhud.nl-hud{position:fixed;padding:calc(env(safe-area-inset-top,0px) + 10px) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px))}
-#jGoals.nl-goaltray{position:fixed;top:calc(env(safe-area-inset-top,0px) + 72px);flex-direction:row;flex-wrap:wrap;max-width:calc(100% - 24px)}
+#jGoals.nl-goaltray{position:fixed;pointer-events:none;top:calc(env(safe-area-inset-top,0px) + 72px);flex-direction:row;flex-wrap:wrap;max-width:calc(100% - 24px)}
 #jGoals:empty{visibility:hidden}
 #jLevelTag{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
 .hud-low{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:20;display:flex;gap:10px}
@@ -2493,7 +2493,7 @@ function jActivate(t,delay){
     jFlyWorld(cx,cy,pts,'+'+pts,(t.mult||1)>1?[255,214,110]:[255,240,210]);
     if(merry){setTimeout(()=>{jFlyWorld(cx,cy+34,JP.MERRY,'Merry Match!',PAL[A.color]);jCallout('Merry Match!',PAL[A.color]);SFX.jingle(.5);sfx('merryMatch')},220)}
   },delay);
-  for(const gf of g.gifts){if(gf.layers<=0)continue;if(!jTouches(t,gf))continue;if(gf.ribbon!=null&&![A,B,C].some(v=>v.color===gf.ribbon))continue;jHitGift(gf,delay+220)}
+  for(const gf of g.gifts){if(gf.layers<=0)continue;if(!jTouches(t,gf))continue;if(gf.ribbon!=null&&![A,B,C].some(v=>v.color===gf.ribbon)){jWrongRibbon(gf,delay+220);continue}jHitGift(gf,delay+220)}
   for(const v of [a,b,c]){if(g.bulbs[v].nose&&!J.nosesLit.has(v))jLightNose(v,delay+260)}
   if([A,B,C].some(v=>v.kind==='topper')&&!J.topperLit){J.topperLit=true;J.score+=JP.STAR;const T=[A,B,C].find(v=>v.kind==='topper');
     if(!SIM)setTimeout(()=>{jCallout('Star on top!',[255,220,120]);jFlyWorld(T.x,T.y,JP.STAR,'+'+JP.STAR);SFX.bell(1046.5,1);SFX.bell(1567.98,.7,.12);for(let k=0;k<50;k++){const an=Math.random()*6.28,sp=rnd(40,240);particles.push({x:T.x,y:T.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,life:0,max:rnd(.8,1.6),sz:rnd(1.5,3.5),c:[255,220,120]})}},delay+300)}
@@ -2503,6 +2503,9 @@ function jActivate(t,delay){
   const tp=g.bulbs.find(v=>v.kind==='topper'&&v.locked);
   if(tp&&J.trisLit>=J.unlock){tp.locked=false;if(!SIM)setTimeout(()=>{tp.bump=1.5;sfx('topperUnlock');SFX.bell(1046.5,.8);SFX.jingle(.6);floats.push({x:tp.x,y:tp.y-56,text:'The star woke up!',t0:now(),c:WARM,big:1});for(let k=0;k<30;k++){const an=Math.random()*6.28,sp=rnd(40,200);particles.push({x:tp.x,y:tp.y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,life:0,max:rnd(.6,1.2),sz:rnd(1.5,3),c:[255,220,120]})}},delay+500)}
 }
+const RIBBON_NAMES=['red','yellow','green','blue','pink','orange'];
+function jWrongRibbon(gf,delay){if(SIM)return;const g=G;setTimeout(()=>{if(G!==g)return;gf.rip=now();gf.nope=now();try{SFX.snap()}catch(e){}haptic&&haptic(18);
+  const nm=RIBBON_NAMES[gf.ribbon]||'matching';floats.push({x:gf.x,y:gf.y-50,text:'Needs a '+nm+' bulb',t0:now(),c:PAL[gf.ribbon]||[255,230,200],small:1});g.J.ribMsg='Needs a '+nm+' bulb';g.J.ribT=now()+3200;hint(g.J.ribMsg)},delay)}
 function jHitGift(gf,delay){
   const g=G,J=g.J;gf.layers--;
   if(gf.layers<=0){gf.owner='you';gf.t=now()+delay;J.score+=JP.GIFT;
@@ -2576,7 +2579,7 @@ function jTurn(){
   while(tut&&J.tut<tut.length){const [a,b]=tut[J.tut];if(g.adj[a].has(b)){J.tut++;continue}if(!legal(g.M,a,b)){J.ghost={a,b,t0:now(),tut:1};break}J.tut++}
   const left=J.budget-J.used;
   J.urgent=false;const tele=J.snowQ.some(s=>s.warned&&!s.done)?'heads-snow':(J.biker&&J.biker.warned&&!J.biker.done)?'heads-scissors':'';
-  if(J.ghost)hint('');else if(left<=0){J.urgent=false;hint('')}else if(tele)hint(tele);else if(left===1)hint('Last cord. Make it count.');else hint('');
+  if(J.ghost)hint('');else if(left<=0){J.urgent=false;hint('')}else if(tele)hint(tele);else if(left===1)hint('Last cord. Make it count.');else if(J.ribT&&now()<J.ribT)hint(J.ribMsg);else hint('');
 }
 // a good next cord, using the real rules on a silent copy of the board
 function jClone(g){
@@ -3040,7 +3043,7 @@ const GUIDES={
  'Cord pulled back.':['','&#8634;','Undone','Cord pulled back.'],
  'The star joins the game. Connect to it.':['good','&#9733;','The star is ready!','Connect a triangle to it to finish.'],
 };
-function guideFor(t){const m=/^(.*) is in the way$/.exec(t);if(m&&!GUIDES[t]){const sb=/snowball/i.test(m[1]);return ['warn','&#9995;','Blocked!',sb?'A snowball is in the way. Close a lit triangle around it to melt it.':`${m[1]} is in the way. Go around it.`]}
+function guideFor(t){{const r=/^Needs a (\w+) bulb$/.exec(t);if(r)return ['warn','&#127873;','Wrong colour!',`This present has a ${r[1]} ribbon. Make a triangle with a ${r[1]} bulb in it to open it.`]}const m=/^(.*) is in the way$/.exec(t);if(m&&!GUIDES[t]){const sb=/snowball/i.test(m[1]);return ['warn','&#9995;','Blocked!',sb?'A snowball is in the way. Close a lit triangle around it to melt it.':`${m[1]} is in the way. Go around it.`]}
   return GUIDES[t]||['','!',t,'']}
 function hint(t){$('hint').textContent=t;const h=$('jHint');if(!h)return;clearTimeout(hint._to);
   if(!t){h.classList.remove('on','pulse');h._key='';return}
@@ -3058,6 +3061,14 @@ let mapCh=-1;
 function chapterList(ch){const out=[];LEVELS.forEach((L,i)=>{if(chapterOf(L)===ch)out.push(i)});return out}
 function currentLevel(){let cur=-1;LEVELS.forEach((L,i)=>{const s=jprog[L.id||('lv'+i)]||0;if(cur<0&&jUnlocked(i)&&!s)cur=i});return cur<0?LEVELS.length-1:cur}
 let lastWin=null;
+// district presents: the present on each district's last level opens once that level is cleared
+let cityGifts=store.get('cityGifts',[]);
+function cityGiftState(i){const L=LEVELS[i];if(!L)return 'locked';if(cityGifts.includes(i))return 'opened';return (jprog[L.id||('lv'+i)]||0)>0?'ready':'locked'}
+function openCityGift(i){if(openCityGift.on||cityGiftState(i)!=='ready')return;openCityGift.on=true;const amt=3,d=Math.floor(i/10);
+  const grant=()=>{if(cityGifts.includes(i))return;cityGifts.push(i);store.set('cityGifts',cityGifts);cocoa+=amt;store.set('cocoa',cocoa);const pill=$('mCocoa');if(pill)pill.lastChild.textContent=cocoa};
+  const after=()=>{openCityGift.on=false;if(window.XLCity&&XLCity.popGift){XLCity.popGift(i);XLCity.refresh()}};
+  if(!(window.NLFX&&NLFX.welcomeGift)){grant();sfx('button');after();return}
+  NLFX.welcomeGift({title:'District '+(d+1)+' present',line:'Ho ho ho! You finished the district. This one is yours!',rewards:[{icon:'cocoa',label:'Hot Cocoa',amount:amt}],taps:3,sfx:window.NLSfx,onTap:()=>{initAudio();try{if(window.NLSfx&&AC&&!NLSfx.__ready){NLSfx.init(AC,limIn||undefined);NLSfx.__ready=1}}catch(e){}},ribbon:d%6,onClaim:grant}).then(after,after)}
 function cityOK(){return window.XLCity&&XLCity.ok&&!/[?&]oldmap/.test(location.search)}
 function renderCity(){
   const cur=currentLevel();const total=LEVELS.reduce((s,L,i)=>s+(jprog[L.id||('lv'+i)]||0),0);
@@ -3080,7 +3091,8 @@ function renderCity(){
     drawMarker:c=>{const ci=cur%6;addMascot(c,(x,ww,hh,t)=>NLArt.drawMascot(x,ww/2,hh/2+4,56,ci,'happy',t))},
     sfx:(n,k)=>{try{initAudio();if(n==='lightOn'){SFX.zap();SFX.bell(SCALE[Math.min(SCALE.length-1,2+k)],.7);SFX.crackle(.6);haptic(12)}
       else if(n==='districtLit'){SFX.surge(1);SFX.jingle(1);sfx('plugCascade',5);SFX.bell(1046.5,1);SFX.bell(1567.98,.7,.12);haptic([20,40,20])}}catch(e){}},
-    onLit:()=>setPct(XLCity.pct())});
+    gift:cityGiftState,onGift:i=>{initAudio();openCityGift(i)},
+    onLit:()=>{setPct(XLCity.pct());if(w&&w.i%10===9&&cityGiftState(w.i)==='ready')setTimeout(()=>openCityGift(w.i),900)}});
   setPct(w&&w.wasNew?Math.max(0,r.pct-1):r.pct);
 }
 function renderMap(){
@@ -3191,7 +3203,7 @@ function drawSantaFallback(x,w,h,t){ // until the design team's Santa lands: a j
   if(im.complete)x.drawImage(im,w/2-60,h-104-bob,120,100)}
 function openGift(force){if(!force&&!giftDue())return;
   if(window.NLFX&&NLFX.welcomeGift){if(openGift.on)return;openGift.on=true;const amt=2; // the kit's full-screen Santa + present
-    NLFX.welcomeGift({title:'Welcome back!',line:'Ho ho ho! I brought you something.',rewards:[{icon:'cocoa',label:'Hot Cocoa',amount:amt}],taps:3,
+    NLFX.welcomeGift({title:'Welcome back!',line:'Ho ho ho! I brought you something.',rewards:[{icon:'cocoa',label:'Hot Cocoa',amount:amt}],taps:3,sfx:window.NLSfx,onTap:()=>{initAudio();try{if(window.NLSfx&&AC&&!NLSfx.__ready){NLSfx.init(AC,limIn||undefined);NLSfx.__ready=1}}catch(e){}},
       onClaim:()=>{cocoa+=amt;store.set('cocoa',cocoa);store.set('giftDay',dayKey(Date.now()));const pill=document.querySelector('#mapList .nl-pill:last-child');if(pill)pill.lastChild.textContent=cocoa}}).then(()=>{openGift.on=false},()=>{openGift.on=false});return}
   const ov=$('giftOv');if(!ov||!window.NLArt)return;
   const prize=Math.random()<.3?2:1;ov.dataset.prize=prize;
@@ -3231,7 +3243,7 @@ setMuted(muted);setMusic(musicOn);setSurface(surface);setTrack(track);resize();s
   const pairs=[[0,1],[1,3],[0,3],[1,2],[2,4],[1,4],[3,4],[3,5],[4,5]];pairs.forEach(([a,b],i)=>{const owner=i%3===2?'you':'pre';const n=commitSilent(a,b,owner)})})();
 function commitSilent(a,b,owner){const tri=trisFor(G.M,a,b);addEdge(a,b,owner);tri.forEach(c=>{const t={a,b,c,owner:'you',t0:now()+400,dead:0};G.tris.push(t);[[a,b],[b,c],[c,a]].forEach(([p,q])=>{const e=G.edgeMap.get(ekey(p,q));if(e)e.lit={owner:'you',t0:now()+300,from:p}})})}
 requestAnimationFrame(frame);
-window.__nl={get ctx(){return ctx},jShowResult,hint,setG:x=>{G=x},jStuck,toScreen:(x,y)=>[x*S+OX,y*S+OY],blockerOf,jSolve,LEVELS,newJourney,jHint,jSim,jDone,jGoalState,openJIntro,jBegin,openMap,jClone,get SIM(){return SIM},snowFx,getAC:()=>AC,newGame,playerTap,inTri,get G(){return G},DUEL,PUZ,legal,trisFor,allMoves,aiChoose,commit,startTurn,cloneM,applyM};
+window.__nl={get ctx(){return ctx},cityGiftState,openCityGift,jShowResult,hint,setG:x=>{G=x},jStuck,toScreen:(x,y)=>[x*S+OX,y*S+OY],blockerOf,jSolve,LEVELS,newJourney,jHint,jSim,jDone,jGoalState,openJIntro,jBegin,openMap,jClone,get SIM(){return SIM},snowFx,getAC:()=>AC,newGame,playerTap,inTri,get G(){return G},DUEL,PUZ,legal,trisFor,allMoves,aiChoose,commit,startTurn,cloneM,applyM};
 })();
 </script>
 <script src="studio-kit/art.js"></script>

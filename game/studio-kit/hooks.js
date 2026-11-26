@@ -51,8 +51,13 @@ swap('drawGift', function(gf,t){
   }
   const rip = gf.rip&&t>gf.rip&&t-gf.rip<450 ? Math.sin((t-gf.rip)*.08)*(1-(t-gf.rip)/450)*.15 : 0;
   ctx.save(); if(rip){ ctx.translate(gf.x,gf.y); ctx.rotate(rip); ctx.translate(-gf.x,-gf.y); }
-  A.drawGift(ctx,gf.x,gf.y,size,'closed',S(t),{ribbonCi:gf.ribbon??undefined, layers:(gf.max>1?gf.layers:0)});
+  A.drawGift(ctx,gf.x,gf.y,size,'closed',S(t),gf.ribbon!=null?{ribbonCi:gf.ribbon, layers:(gf.max>1?gf.layers:0)}:{ribbon:'#fbf8ff', layers:(gf.max>1?gf.layers:0)});
   ctx.restore();
+  // colour-ribbon present: a little bulb of the colour it needs, bobbing beside the bow
+  if(gf.ribbon!=null){ const bx=gf.x-size*.62, by=gf.y-size*.5+Math.sin(t*.004+gf.x)*size*.05, nope=gf.nope&&t>gf.nope&&t-gf.nope<900?1-(t-gf.nope)/900:0;
+    ctx.save(); ctx.fillStyle='rgba(16,10,40,.55)'; ctx.beginPath(); ctx.arc(bx,by+size*.02,size*.3,0,6.283); ctx.fill();
+    ctx.strokeStyle=A.PAL[gf.ribbon]; ctx.lineWidth=Math.max(2,size*.05)*(1+nope*1.5); ctx.stroke(); ctx.restore();
+    A.drawBulbBody(ctx,bx,by,size*.42,gf.ribbon,{bright:.6+.4*nope,face:false}); }
 });
 
 /* Santa hats: keeps the engine's aim arrow (good affordance), new hat on top */
