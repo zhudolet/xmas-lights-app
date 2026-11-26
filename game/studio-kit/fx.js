@@ -247,6 +247,7 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
   const rnd=i=>{ const v=Math.sin(i*127.1+311.7)*43758.5453; return v-Math.floor(v); };
   const t0=performance.now(); let shakeT=0, raf=0, lidSnd=0, bulbSnd=0, hoHeard=false;
   const snd=()=>S||opt.sfx||window.NLSfx||null;
+  const unlock=()=>{ try{ opt.onTap&&opt.onTap(); }catch(e){} try{ const c=snd()&&snd().ctx&&snd().ctx(); if(c&&c.state!=='running'&&c.resume) c.resume(); }catch(e){} };
   const live=()=>{ try{ const c=snd()&&snd().ctx&&snd().ctx(); return !!c&&c.state==='running'; }catch(e){ return false; } };
   setTimeout(()=>{ if(live()){ hoHeard=true; snd().santaHoHo&&snd().santaHoHo(); } },450);
   const ground=()=>H*.8;
@@ -304,7 +305,7 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
     raf=requestAnimationFrame(frame); }
   raf=requestAnimationFrame(frame);
   const tap=e=>{ if(state!=='wait') return; e.preventDefault&&e.preventDefault();
-    if(tapN===0&&opt.onTap){ try{ opt.onTap(); }catch(err){} }   // host unlocks audio on the first tap
+    unlock();   // host wakes the game audio (and resumes it) on every tap
     tapN++; shakeT=performance.now(); snd()&&snd().giftShake&&snd().giftShake(tapN);
     if(!hoHeard){ hoHeard=true; setTimeout(()=>snd()&&snd().santaHoHo&&snd().santaHoHo(),260); }
     pips.forEach((p,i)=>p.classList.toggle('on',i<tapN));
@@ -315,6 +316,8 @@ F.welcomeGift=(opt={})=>new Promise(done=>{
     setTimeout(()=>{ root.classList.add('reveal'); snd()&&snd().rewardReveal&&snd().rewardReveal(rewards.length); },650);
     setTimeout(()=>{ state='done'; root.classList.add('claimable'); claim.disabled=false; },650+rewards.length*180+350); };
   stage.addEventListener('pointerdown',tap);
+  // v4.4.1: phones only allow audio to start on touchend/click (a touch pointerdown doesn't count), so unlock there too
+  ['pointerup','touchend','click'].forEach(ev=>root.addEventListener(ev,unlock,{passive:true}));
   const claim=root.querySelector('.nl-welcome-claim');
   claim.onclick=()=>{ if(state!=='done') return; state='gone'; snd()&&snd().claim&&snd().claim();
     root.querySelectorAll('.nl-welcome-rw').forEach(w=>w.classList.add('fly'));
