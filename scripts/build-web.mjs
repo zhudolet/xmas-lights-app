@@ -6,7 +6,7 @@
 //   4. app/app-bridge.js + app/app.css added (ads, consent, Android back button, pause/resume)
 //
 // Usage: node scripts/build-web.mjs [path-to-game-folder]
-// Default game folder: ./game (copied from /mnt/project-files/nanas-lights/xmas-lights/)
+// Default game folder: ./game (copied from /mnt/project-files/nanas-lights/xmas-lights-city/: index.html, levels/, studio-kit/, city/{city-map.js,city.css,three.min.js})
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +22,7 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
 // copy the game folders the page loads
-for (const dir of ['studio-kit', 'levels']) {
+for (const dir of ['studio-kit', 'levels', 'city']) {
   fs.cpSync(path.join(src, dir), path.join(out, dir), { recursive: true });
 }
 // copy app bridge files; real AdMob ad unit ids can come from env (CI) instead of editing the file
