@@ -13,6 +13,8 @@ on:
         description: 'Use the real AdMob ids (only for the store release)'
         type: boolean
         default: false
+permissions:
+  contents: write   # lets the build publish the .aab on the repo's Releases page
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -51,3 +53,11 @@ jobs:
           path: |
             android/app/build/outputs/bundle/release/*.aab
             android/app/build/outputs/apk/**/*.apk
+      # Same files on the Releases page (github.com/zhudolet/xmas-lights-app/releases/latest): one click, no zip
+      - name: Publish to Releases
+        if: env.XL_KEYSTORE_FILE != ''
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          VC=$((100 + GITHUB_RUN_NUMBER))
+          cp android/app/build/outputs/bundle/release/app-release.aab "xmas-lights-$VC.aab"
+          gh release create "build-$VC" "xmas-lights-$VC.aab" --title "Xmas Lights $VC" --notes "Upload xmas-lights-$VC.aab to Play Console > Closed testing > Alpha > Create new release." --latest
